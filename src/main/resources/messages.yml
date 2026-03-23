@@ -1,56 +1,65 @@
 # TestPlugin Messages Configuration
-# Supports color codes using & symbol (e.g., &a for green, &c for red)
+# Uses MiniMessage format for modern text formatting
+# Supports: <color>, <#HEXCOLOR>, <gradient>, <bold>, <italic>, <underlined>, <strikethrough>, <obfuscated>
+# Also backward compatible with legacy & codes (&a, &c, etc.)
 # Placeholders: {player}, {name}, {x}, {y}, {z}, {world}, {owner}, {command}
+#
+# Examples:
+#   <red>Red text</red>
+#   <#FF5555>Custom hex color</red>
+#   <gradient:red:blue>Gradient text</gradient>
+#   <bold><green>Bold green</green></bold>
+#   <hover:show_text:'Click me!'><click:run_command:/help>Clickable</click></hover>
 
 # General Messages
 general:
-  player-only: "&cThis command can only be run by a player."
-  no-permission: "&cYou don't have permission to use this command."
+  player-only: "<red>This command can only be run by a player.</red>"
+  no-permission: "<red>You don't have permission to use this command.</red>"
   
 # Permission-specific messages
 permissions:
-  no-basic: "&cError: You don't have permission to save locations."
-  no-others: "&cError: You don't have permission to access other players' locations."
+  no-basic: "<red>Error: You don't have permission to save locations.</red>"
+  no-others: "<red>Error: You don't have permission to access other players' locations.</red>"
 
 # Location storage messages
 storage:
-  saved: "&aCoordinates saved as '&f{name}&a'."
-  updated: "&aLocation '&f{name}&a' has been updated."
-  deleted: "&aLocation '&f{name}&a' has been deleted."
-  not-found: "&cError: Location '&f{name}&c' not found."
-  player-not-found: "&cError: Player '&f{player}&c' not found or has no saved locations."
-  invalid-name: "&cError: Location name must only contain letters, numbers, underscores, and hyphens."
+  saved: "<green>Coordinates saved as '<white>{name}</white>'.</green>"
+  updated: "<green>Location '<white>{name}</white>' has been updated.</green>"
+  deleted: "<green>Location '<white>{name}</white>' has been deleted.</green>"
+  not-found: "<red>Error: Location '<white>{name}</white>' not found.</red>"
+  player-not-found: "<red>Error: Player '<white>{player}</white>' not found or has no saved locations.</red>"
+  invalid-name: "<red>Error: Location name must only contain letters, numbers, underscores, and hyphens.</red>"
   
 # Teleport messages
 teleport:
-  success: "&aTeleported to '&f{name}&a'."
-  cross-player-success: "&aTeleported to &f{owner}&a's location '&f{name}&a'."
-  failed: "&cTeleportation failed. The world may not exist."
+  success: "<green>Teleported to '<white>{name}</white>'.</green>"
+  cross-player-success: "<green>Teleported to <white>{owner}</white>'s location '<white>{name}</white>'.</green>"
+  failed: "<red>Teleportation failed. The world may not exist.</red>"
   
 # List locations messages
 list:
-  header: "&6=== Saved Locations ==="
-  own-header: "&6=== Your Saved Locations ==="
-  other-header: "&6=== {player}'s Saved Locations ==="
-  entry: "&e- &f{name} &7({world}: {x}, {y}, {z})"
-  empty: "&7No saved locations found."
+  header: "<gold>=== Saved Locations ===</gold>"
+  own-header: "<gold>=== Your Saved Locations ===</gold>"
+  other-header: "<gold>=== {player}'s Saved Locations ===</gold>"
+  entry: "<yellow>- <white>{name}</white> <gray>({world}: {x}, {y}, {z})</gray></yellow>"
+  empty: "<gray>No saved locations found.</gray>"
   
 # Command usage messages
 usage:
-  goto: "&cUsage: /goto <name> or /goto <player>:<name>"
-  storeloc: "&cUsage: /storeloc <name> <x> <y> <z>"
-  setloc: "&cUsage: /setloc <name> <x> <y> <z>"
-  deleteloc: "&cUsage: /deleteloc <name>"
-  listlocs: "&cUsage: /listlocs [player]"
+  goto: "<red>Usage: /goto <name> or /goto <player>:<name></red>"
+  storeloc: "<red>Usage: /storeloc <name> <x> <y> <z></red>"
+  setloc: "<red>Usage: /setloc <name> <x> <y> <z></red>"
+  deleteloc: "<red>Usage: /deleteloc <name></red>"
+  listlocs: "<red>Usage: /listlocs [player]</red>"
   
 # Command interceptor messages
 interceptor:
-  parsed-command: "&7Parsed command: &b{command}"
+  parsed-command: "<gray>Parsed command: <aqua>{command}</aqua></gray>"
   
 # Error messages
 errors:
-  invalid-coordinates: "&cError: Coordinates must be numeric values."
-  database-error: "&cError: Failed to save location. Please contact an administrator."
+  invalid-coordinates: "<red>Error: Coordinates must be numeric values.</red>"
+  database-error: "<red>Error: Failed to save location. Please contact an administrator.</red>"
   
 # Database messages (console only, not user-facing)
 database:

@@ -1,6 +1,7 @@
 package com.ideflux.testPlugin;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -16,18 +17,21 @@ import java.util.logging.Level;
 
 /**
  * Manages localized messages from messages.yml configuration file.
- * Supports color codes using & symbol and placeholder replacement.
+ * Uses modern MiniMessage format for rich text formatting with HEX color support.
+ * Also supports legacy ampersand codes for backward compatibility.
  * Thread-safe and allows server administrators to customize all user-facing messages.
  */
 public class MessageManager {
     
     private final JavaPlugin plugin;
     private FileConfiguration messagesConfig;
-    private final LegacyComponentSerializer serializer;
+    private final MiniMessage miniMessage;
+    private final LegacyComponentSerializer legacySerializer;
     
     public MessageManager(JavaPlugin plugin) {
         this.plugin = plugin;
-        this.serializer = LegacyComponentSerializer.legacyAmpersand();
+        this.miniMessage = MiniMessage.miniMessage();
+        this.legacySerializer = LegacyComponentSerializer.legacyAmpersand();
         loadMessages();
     }
     
@@ -79,15 +83,17 @@ public class MessageManager {
     
     /**
      * Gets a message as a Component with color codes processed.
+     * Supports both MiniMessage format (e.g., <red>, <#FF5555>) and legacy ampersand codes (&a, &c).
      * No placeholder replacement.
      */
     public Component getMessage(String path) {
         String raw = getRawMessage(path);
-        return serializer.deserialize(raw);
+        return deserialize(raw);
     }
     
     /**
      * Gets a message as a Component with placeholder replacement.
+     * Supports both MiniMessage format (e.g., <red>, <#FF5555>) and legacy ampersand codes (&a, &c).
      * 
      * @param path The message path in messages.yml (e.g., "storage.saved")
      * @param placeholders Map of placeholder names to values (e.g., "name" -> "home")
@@ -101,7 +107,25 @@ public class MessageManager {
             raw = raw.replace("{" + entry.getKey() + "}", entry.getValue());
         }
         
-        return serializer.deserialize(raw);
+        return deserialize(raw);
+    }
+    
+    /**
+     * Deserializes a string into a Component.
+     * Attempts MiniMessage first, falls back to legacy ampersand codes if parsing fails.
+     * This provides backward compatibility while encouraging modern format usage.
+     *
+     * @param text The text to deserialize
+     * @return The deserialized Component
+     */
+    private Component deserialize(String text) {
+        try {
+            // Try MiniMessage first (supports <red>, <#FF5555>, <gradient>, etc.)
+            return miniMessage.deserialize(text);
+        } catch (Exception e) {
+            // Fallback to legacy ampersand codes (&a, &c, etc.)
+            return legacySerializer.deserialize(text);
+        }
     }
     
     /**

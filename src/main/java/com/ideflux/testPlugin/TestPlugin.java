@@ -45,17 +45,52 @@ public class TestPlugin extends JavaPlugin {
     public void onEnable() {
         this.saveDefaultConfig();
         
-        // Initialize message manager
+        // Initialize message manager (synchronous - lightweight)
         this.messages = new MessageManager(this);
         
-        // Initialize database
+        // Initialize database manager
         this.dbManager = new DatabaseManager(this);
-        this.dbManager.initialize();
         
-        // Initialize coordinate store with database
+        // Initialize coordinate store (no data loaded yet)
         this.crdStore = new CoordinateStore(this, dbManager);
 
-        // Instantiate command classes
+        // Register commands (can be done before data is loaded)
+        registerCommands();
+        
+        // Register event listeners
+        registerListeners();
+        
+        // Perform async initialization to prevent blocking the main thread
+        getLogger().info("Starting async database initialization...");
+        
+        dbManager.initializeAsync()
+                .thenCompose(v -> {
+                    getLogger().info("Database initialized, loading location data...");
+                    return crdStore.loadDataAsync();
+                })
+                .thenRun(() -> {
+                    getLogger().info("Location data loaded, checking for YAML migration...");
+                    // Perform migration from YAML to SQLite if needed
+                    LocationRepository repository = new LocationRepository(dbManager);
+                    DataMigration migration = new DataMigration(this, crdStore, repository);
+                    migration.migrateIfNeeded();
+                })
+                .thenRun(() -> {
+                    getLogger().info("TestPlugin initialization complete!");
+                })
+                .exceptionally(ex -> {
+                    getLogger().severe("Failed to initialize TestPlugin: " + ex.getMessage());
+                    ex.printStackTrace();
+                    getLogger().severe("Plugin will be disabled.");
+                    getServer().getPluginManager().disablePlugin(this);
+                    return null;
+                });
+    }
+    
+    /**
+     * Registers all plugin commands.
+     */
+    private void registerCommands() {
         GotoCommand gotoCmd = new GotoCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("goto")).setExecutor(gotoCmd);
         Objects.requireNonNull(this.getCommand("goto")).setTabCompleter(gotoCmd);
@@ -75,15 +110,15 @@ public class TestPlugin extends JavaPlugin {
         DeleteLocCommand deleteLocCmd = new DeleteLocCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("deleteloc")).setExecutor(deleteLocCmd);
         Objects.requireNonNull(this.getCommand("deleteloc")).setTabCompleter(deleteLocCmd);
-
+    }
+    
+    /**
+     * Registers all event listeners.
+     */
+    private void registerListeners() {
         this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
         this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore, messages), this);
         this.getServer().getPluginManager().registerEvents(new PlayerJoinListener(crdStore), this);
-        
-        // Perform migration from YAML to SQLite if needed
-        LocationRepository repository = new LocationRepository(dbManager);
-        DataMigration migration = new DataMigration(this, crdStore, repository);
-        migration.migrateIfNeeded();
     }
 
     @Override

@@ -47,7 +47,16 @@ public class CoordinateStore {
         this.plugin = plugin;
         this.dbManager = dbManager;
         this.repository = new LocationRepository(dbManager);
-        loadDataFromDatabase();
+    }
+    
+    /**
+     * Loads data from database asynchronously.
+     * Should be called after database initialization is complete.
+     *
+     * @return CompletableFuture that completes when data is loaded
+     */
+    public CompletableFuture<Void> loadDataAsync() {
+        return loadDataFromDatabase();
     }
 
     /**
@@ -195,11 +204,14 @@ public class CoordinateStore {
     /**
      * Loads all data from database into memory cache.
      * Called during plugin initialization.
+     * Optimized to avoid blocking Mojang API calls during startup.
+     *
+     * @return CompletableFuture that completes when all data is loaded
      */
-    private void loadDataFromDatabase() {
+    private CompletableFuture<Void> loadDataFromDatabase() {
         plugin.getLogger().info("Loading location data from database...");
         
-        repository.getAllOwners().thenAccept(owners -> {
+        return repository.getAllOwners().thenCompose(owners -> {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             
             for (UUID ownerId : owners) {
@@ -209,17 +221,13 @@ public class CoordinateStore {
                                 locationCache.put(ownerId, new ConcurrentHashMap<>(locations));
                             }
                             
-                            // Build username cache
-                            org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(ownerId);
-                            String playerName = offlinePlayer.getName();
-                            if (playerName != null) {
-                                usernameCache.put(playerName.toLowerCase(), ownerId);
-                            }
+                            // Skip Mojang API lookup during startup - will be populated on player join
+                            // This prevents blocking the startup process with expensive HTTP requests
                         });
                 futures.add(future);
             }
             
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenRun(() -> {
                         int totalLocations = locationCache.values().stream()
                                 .mapToInt(Map::size)

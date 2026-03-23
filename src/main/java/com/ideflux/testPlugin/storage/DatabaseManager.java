@@ -28,40 +28,46 @@ public class DatabaseManager {
     
     /**
      * Initializes the database connection and creates tables if needed.
-     * Should be called synchronously during plugin enable.
+     * Runs asynchronously to prevent blocking the main thread during plugin startup.
+     *
+     * @return CompletableFuture that completes when initialization is done
      */
-    public void initialize() {
-        try {
-            // Ensure data folder exists
-            if (!plugin.getDataFolder().exists()) {
-                if (!plugin.getDataFolder().mkdirs()) {
-                    plugin.getLogger().warning("Failed to create plugin data folder");
+    public java.util.concurrent.CompletableFuture<Void> initializeAsync() {
+        return java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                // Ensure data folder exists
+                if (!plugin.getDataFolder().exists()) {
+                    if (!plugin.getDataFolder().mkdirs()) {
+                        plugin.getLogger().warning("Failed to create plugin data folder");
+                    }
                 }
+                
+                // Load SQLite JDBC driver
+                Class.forName("org.sqlite.JDBC");
+                
+                // Establish connection
+                connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                
+                // Enable foreign keys and WAL mode for better performance
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("PRAGMA foreign_keys = ON");
+                    stmt.execute("PRAGMA journal_mode = WAL"); // Write-Ahead Logging for better concurrency
+                    stmt.execute("PRAGMA synchronous = NORMAL"); // Balance between safety and performance
+                }
+                
+                // Create tables
+                createTables();
+                
+                plugin.getLogger().info("SQLite database initialized successfully at: " + databasePath);
+                
+            } catch (ClassNotFoundException e) {
+                plugin.getLogger().log(Level.SEVERE, "SQLite JDBC driver not found!", e);
+                throw new RuntimeException("Database initialization failed", e);
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to initialize database!", e);
+                throw new RuntimeException("Database initialization failed", e);
             }
-            
-            // Load SQLite JDBC driver
-            Class.forName("org.sqlite.JDBC");
-            
-            // Establish connection
-            connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
-            
-            // Enable foreign keys and WAL mode for better performance
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("PRAGMA foreign_keys = ON");
-                stmt.execute("PRAGMA journal_mode = WAL"); // Write-Ahead Logging for better concurrency
-                stmt.execute("PRAGMA synchronous = NORMAL"); // Balance between safety and performance
-            }
-            
-            // Create tables
-            createTables();
-            
-            plugin.getLogger().info("SQLite database initialized successfully at: " + databasePath);
-            
-        } catch (ClassNotFoundException e) {
-            plugin.getLogger().log(Level.SEVERE, "SQLite JDBC driver not found!", e);
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to initialize database!", e);
-        }
+        });
     }
     
     /**
