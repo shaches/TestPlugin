@@ -7,14 +7,14 @@ description: The World is a dangerous place
 website: ideflux.com
 commands:
   goto:
-    description: Teleports to a saved coordinate index.
-    usage: /goto <index>
+    description: Teleports to a saved location. Supports personal and cross-player access.
+    usage: /goto <name> or /goto <player>:<name>
   storeloc:
-    description: Stores a coordinate in the next available index.
+    description: Stores a coordinate with a custom name. Names must be alphanumeric (letters, numbers, underscores, hyphens only).
     usage: /storeloc <name> <x> <y> <z>
   listlocs:
-    description: Lists all stored coordinates and their indices.
-    usage: /listlocs
+    description: Lists saved coordinates. Optional player argument to view another player's locations (read-only).
+    usage: /listlocs [player]
   setloc:
-    description: Overwrites an existing coordinate index.
-    usage: /setloc <index> <x> <y> <z>
+    description: Overwrites an existing location you own. Cannot modify other players' locations.
+    usage: /setloc <name> <x> <y> <z>

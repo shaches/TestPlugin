@@ -57,12 +57,11 @@ public class CommandInterceptor implements Listener {
                     String targetPlayerName = refParts[0];
                     locationName = refParts[1].toLowerCase();
 
-                    // Resolve the target player's UUID
-                    OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
-                    if (!targetPlayer.hasPlayedBefore() && !targetPlayer.isOnline()) {
+                    // Resolve the target player's UUID using safe cache lookup
+                    targetOwnerId = crdStore.resolvePlayerUUID(targetPlayerName);
+                    if (targetOwnerId == null) {
                         continue; // Skip if player not found
                     }
-                    targetOwnerId = targetPlayer.getUniqueId();
                 } else {
                     // Use the player's own locations
                     targetOwnerId = player.getUniqueId();

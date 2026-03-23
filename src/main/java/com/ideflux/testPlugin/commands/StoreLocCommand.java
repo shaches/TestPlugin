@@ -52,13 +52,20 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
 
         try {
             String name = args[0];
+
+            // Validate location name to prevent YAML corruption
+            if (!name.matches("^[a-zA-Z0-9_-]+$")) {
+                player.sendMessage(Component.text("Error: Location name must only contain letters, numbers, underscores, and hyphens.")
+                        .color(NamedTextColor.RED));
+                return true;
+            }
+
             double x = Double.parseDouble(args[1]);
             double y = Double.parseDouble(args[2]);
             double z = Double.parseDouble(args[3]);
 
             // Store the location under the player's UUID (ownership enforcement)
             crdStore.storePoint(player.getUniqueId(), name, player.getWorld().getName(), x, y, z);
-
 
             player.sendMessage(Component.text("Coordinates saved as '")
                     .color(NamedTextColor.GREEN)

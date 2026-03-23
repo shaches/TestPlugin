@@ -66,13 +66,12 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
             String targetPlayerName = parts[0];
             locationName = parts[1];
 
-            // Resolve the target player's UUID
-            OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
-            if (!targetPlayer.hasPlayedBefore() && !targetPlayer.isOnline()) {
-                player.sendMessage(Component.text("Error: Player '" + targetPlayerName + "' not found.").color(NamedTextColor.RED));
+            // Resolve the target player's UUID using safe cache lookup
+            targetOwnerId = crdStore.resolvePlayerUUID(targetPlayerName);
+            if (targetOwnerId == null) {
+                player.sendMessage(Component.text("Error: Player '" + targetPlayerName + "' not found. Player must be online or have been seen before.").color(NamedTextColor.RED));
                 return true;
             }
-            targetOwnerId = targetPlayer.getUniqueId();
         } else {
             // Use the player's own locations
             targetOwnerId = player.getUniqueId();
@@ -123,15 +122,15 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
                 }
             }
 
-            // Suggest cross-player references (player:location)
+            // Suggest cross-player references (player:location) - only for online players
             if (partialInput.contains(":")) {
                 String[] parts = partialInput.split(":", 2);
                 String targetPlayerName = parts[0];
                 String partialLocationName = parts.length > 1 ? parts[1] : "";
 
-                OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
-                if (targetPlayer.hasPlayedBefore() || targetPlayer.isOnline()) {
-                    for (String locName : crdStore.getSavedNames(targetPlayer.getUniqueId())) {
+                UUID targetUUID = crdStore.resolvePlayerUUID(targetPlayerName);
+                if (targetUUID != null) {
+                    for (String locName : crdStore.getSavedNames(targetUUID)) {
                         if (locName.toLowerCase(Locale.ROOT).startsWith(partialLocationName)) {
                             completions.add(targetPlayerName + ":" + locName);
                         }

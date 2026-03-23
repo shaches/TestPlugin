@@ -59,14 +59,13 @@ public class ListLocsCommand implements CommandExecutor, TabCompleter {
         } else if (args.length == 1) {
             // Show another player's locations
             String targetPlayerName = args[0];
-            OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
+            targetOwnerId = crdStore.resolvePlayerUUID(targetPlayerName);
 
-            if (!targetPlayer.hasPlayedBefore() && !targetPlayer.isOnline()) {
-                player.sendMessage(Component.text("Error: Player '" + targetPlayerName + "' not found.").color(NamedTextColor.RED));
+            if (targetOwnerId == null) {
+                player.sendMessage(Component.text("Error: Player '" + targetPlayerName + "' not found. Player must be online or have been seen before.").color(NamedTextColor.RED));
                 return true;
             }
 
-            targetOwnerId = targetPlayer.getUniqueId();
             displayName = targetPlayerName + "'s";
         } else {
             player.sendMessage(Component.text("Usage: /listlocs [player]").color(NamedTextColor.RED));

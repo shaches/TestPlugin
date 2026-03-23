@@ -5,6 +5,7 @@ import com.ideflux.testPlugin.commands.ListLocsCommand;
 import com.ideflux.testPlugin.commands.SetLocCommand;
 import com.ideflux.testPlugin.commands.StoreLocCommand;
 import com.ideflux.testPlugin.listeners.CommandInterceptor;
+import com.ideflux.testPlugin.listeners.PlayerJoinListener;
 import com.ideflux.testPlugin.listeners.TabCompletionInterceptor;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -53,6 +54,7 @@ public class TestPlugin extends JavaPlugin {
 
         this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
         this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore), this);
+        this.getServer().getPluginManager().registerEvents(new PlayerJoinListener(crdStore), this);
     }
 
     @Override

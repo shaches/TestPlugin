@@ -10,6 +10,7 @@ import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * The TabCompletionInterceptor class listens for asynchronous tab completion events and
@@ -51,11 +52,11 @@ public class TabCompletionInterceptor implements Listener {
                 String targetPlayerName = refParts[0];
                 String partialLocationName = refParts.length > 1 ? refParts[1].toLowerCase() : "";
 
-                // Resolve the target player's UUID
-                OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
-                if (targetPlayer.hasPlayedBefore() || targetPlayer.isOnline()) {
+                // Resolve the target player's UUID using safe cache lookup
+                UUID targetUUID = crdStore.resolvePlayerUUID(targetPlayerName);
+                if (targetUUID != null) {
                     // Suggest the target player's location names
-                    for (String locName : crdStore.getSavedNames(targetPlayer.getUniqueId())) {
+                    for (String locName : crdStore.getSavedNames(targetUUID)) {
                         if (locName.toLowerCase().startsWith(partialLocationName)) {
                             newCompletions.add("#" + targetPlayerName + ":" + locName);
                         }
