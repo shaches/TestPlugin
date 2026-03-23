@@ -44,6 +44,13 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // Require basic permission to save locations
+        if (!player.hasPermission("testplugin.basic")) {
+            player.sendMessage(Component.text("Error: You don't have permission to save locations.")
+                    .color(NamedTextColor.RED));
+            return true;
+        }
+
         // The argument count is increased to 4 to accommodate the string key
         if (args.length != 4) {
             player.sendMessage(Component.text("Usage: /storeloc <name> <x> <y> <z>").color(NamedTextColor.RED));

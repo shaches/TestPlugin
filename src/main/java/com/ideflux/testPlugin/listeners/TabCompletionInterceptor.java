@@ -48,36 +48,43 @@ public class TabCompletionInterceptor implements Listener {
 
             // Check if the reference contains a colon (cross-player reference)
             if (reference.contains(":")) {
-                String[] refParts = reference.split(":", 2);
-                String targetPlayerName = refParts[0];
-                String partialLocationName = refParts.length > 1 ? refParts[1].toLowerCase() : "";
+                // Require permission to access other players' locations
+                if (player.hasPermission("testplugin.others")) {
+                    String[] refParts = reference.split(":", 2);
+                    String targetPlayerName = refParts[0];
+                    String partialLocationName = refParts.length > 1 ? refParts[1].toLowerCase() : "";
 
-                // Resolve the target player's UUID using safe cache lookup
-                UUID targetUUID = crdStore.resolvePlayerUUID(targetPlayerName);
-                if (targetUUID != null) {
-                    // Suggest the target player's location names
-                    for (String locName : crdStore.getSavedNames(targetUUID)) {
-                        if (locName.toLowerCase().startsWith(partialLocationName)) {
-                            newCompletions.add("#" + targetPlayerName + ":" + locName);
+                    // Resolve the target player's UUID using safe cache lookup
+                    UUID targetUUID = crdStore.resolvePlayerUUID(targetPlayerName);
+                    if (targetUUID != null) {
+                        // Suggest the target player's location names
+                        for (String locName : crdStore.getSavedNames(targetUUID)) {
+                            if (locName.toLowerCase().startsWith(partialLocationName)) {
+                                newCompletions.add("#" + targetPlayerName + ":" + locName);
+                            }
                         }
                     }
                 }
             } else {
                 String partialName = reference.toLowerCase();
 
-                // Suggest the player's own location names
-                for (String name : crdStore.getSavedNames(player.getUniqueId())) {
-                    if (name.toLowerCase().startsWith(partialName)) {
-                        newCompletions.add("#" + name);
+                // Suggest the player's own location names (requires basic permission)
+                if (player.hasPermission("testplugin.basic")) {
+                    for (String name : crdStore.getSavedNames(player.getUniqueId())) {
+                        if (name.toLowerCase().startsWith(partialName)) {
+                            newCompletions.add("#" + name);
+                        }
                     }
                 }
 
-                // Suggest online player names with colon suffix for cross-player completion
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
-                        String playerPrefix = onlinePlayer.getName().toLowerCase() + ":";
-                        if (playerPrefix.startsWith(partialName)) {
-                            newCompletions.add("#" + onlinePlayer.getName() + ":");
+                // Suggest online player names with colon suffix (requires others permission)
+                if (player.hasPermission("testplugin.others")) {
+                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                        if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
+                            String playerPrefix = onlinePlayer.getName().toLowerCase() + ":";
+                            if (playerPrefix.startsWith(partialName)) {
+                                newCompletions.add("#" + onlinePlayer.getName() + ":");
+                            }
                         }
                     }
                 }

@@ -37,6 +37,13 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // Require basic permission to modify locations
+        if (!player.hasPermission("testplugin.basic")) {
+            player.sendMessage(Component.text("Error: You don't have permission to modify locations.")
+                    .color(NamedTextColor.RED));
+            return true;
+        }
+
         if (args.length != 4) {
             player.sendMessage(Component.text("Usage: /setloc <name> <x> <y> <z>").color(NamedTextColor.RED));
             return true;

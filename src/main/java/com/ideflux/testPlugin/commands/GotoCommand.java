@@ -57,6 +57,13 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
 
         // Check if the input contains a colon (cross-player reference)
         if (input.contains(":")) {
+            // Require permission to access other players' locations
+            if (!player.hasPermission("testplugin.others")) {
+                player.sendMessage(Component.text("Error: You don't have permission to access other players' locations.")
+                        .color(NamedTextColor.RED));
+                return true;
+            }
+
             String[] parts = input.split(":", 2);
             if (parts.length != 2) {
                 player.sendMessage(Component.text("Error: Invalid format. Use <player>:<name>").color(NamedTextColor.RED));
@@ -73,7 +80,13 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
         } else {
-            // Use the player's own locations
+            // Use the player's own locations - require basic permission
+            if (!player.hasPermission("testplugin.basic")) {
+                player.sendMessage(Component.text("Error: You don't have permission to use saved locations.")
+                        .color(NamedTextColor.RED));
+                return true;
+            }
+
             targetOwnerId = player.getUniqueId();
             locationName = input;
         }
@@ -115,34 +128,38 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             String partialInput = args[0].toLowerCase(Locale.ROOT);
 
-            // Suggest own locations
-            for (String name : crdStore.getSavedNames(player.getUniqueId())) {
-                if (name.toLowerCase(Locale.ROOT).startsWith(partialInput)) {
-                    completions.add(name);
+            // Suggest own locations (requires basic permission)
+            if (player.hasPermission("testplugin.basic")) {
+                for (String name : crdStore.getSavedNames(player.getUniqueId())) {
+                    if (name.toLowerCase(Locale.ROOT).startsWith(partialInput)) {
+                        completions.add(name);
+                    }
                 }
             }
 
-            // Suggest cross-player references (player:location) - only for online players
-            if (partialInput.contains(":")) {
-                String[] parts = partialInput.split(":", 2);
-                String targetPlayerName = parts[0];
-                String partialLocationName = parts.length > 1 ? parts[1] : "";
+            // Suggest cross-player references only if player has permission
+            if (player.hasPermission("testplugin.others")) {
+                if (partialInput.contains(":")) {
+                    String[] parts = partialInput.split(":", 2);
+                    String targetPlayerName = parts[0];
+                    String partialLocationName = parts.length > 1 ? parts[1] : "";
 
-                UUID targetUUID = crdStore.resolvePlayerUUID(targetPlayerName);
-                if (targetUUID != null) {
-                    for (String locName : crdStore.getSavedNames(targetUUID)) {
-                        if (locName.toLowerCase(Locale.ROOT).startsWith(partialLocationName)) {
-                            completions.add(targetPlayerName + ":" + locName);
+                    UUID targetUUID = crdStore.resolvePlayerUUID(targetPlayerName);
+                    if (targetUUID != null) {
+                        for (String locName : crdStore.getSavedNames(targetUUID)) {
+                            if (locName.toLowerCase(Locale.ROOT).startsWith(partialLocationName)) {
+                                completions.add(targetPlayerName + ":" + locName);
+                            }
                         }
                     }
-                }
-            } else {
-                // Suggest online player names with colon suffix
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
-                        String playerPrefix = onlinePlayer.getName().toLowerCase(Locale.ROOT) + ":";
-                        if (playerPrefix.startsWith(partialInput)) {
-                            completions.add(onlinePlayer.getName() + ":");
+                } else {
+                    // Suggest online player names with colon suffix
+                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                        if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
+                            String playerPrefix = onlinePlayer.getName().toLowerCase(Locale.ROOT) + ":";
+                            if (playerPrefix.startsWith(partialInput)) {
+                                completions.add(onlinePlayer.getName() + ":");
+                            }
                         }
                     }
                 }

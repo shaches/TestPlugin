@@ -51,6 +51,11 @@ public class CommandInterceptor implements Listener {
 
                 // Check if the reference contains a colon (cross-player reference)
                 if (reference.contains(":")) {
+                    // Require permission to access other players' locations
+                    if (!player.hasPermission("testplugin.others")) {
+                        continue; // Skip if no permission
+                    }
+
                     String[] refParts = reference.split(":", 2);
                     if (refParts.length != 2) continue;
 
@@ -63,7 +68,11 @@ public class CommandInterceptor implements Listener {
                         continue; // Skip if player not found
                     }
                 } else {
-                    // Use the player's own locations
+                    // Use the player's own locations - require basic permission
+                    if (!player.hasPermission("testplugin.basic")) {
+                        continue; // Skip if no permission
+                    }
+
                     targetOwnerId = player.getUniqueId();
                     locationName = reference.toLowerCase();
                 }

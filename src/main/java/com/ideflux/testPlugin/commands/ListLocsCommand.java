@@ -53,11 +53,23 @@ public class ListLocsCommand implements CommandExecutor, TabCompleter {
 
         // Determine whose locations to display
         if (args.length == 0) {
-            // Show own locations
+            // Show own locations - require basic permission
+            if (!player.hasPermission("testplugin.basic")) {
+                player.sendMessage(Component.text("Error: You don't have permission to use saved locations.")
+                        .color(NamedTextColor.RED));
+                return true;
+            }
+
             targetOwnerId = player.getUniqueId();
             displayName = "Your";
         } else if (args.length == 1) {
-            // Show another player's locations
+            // Show another player's locations - require others permission
+            if (!player.hasPermission("testplugin.others")) {
+                player.sendMessage(Component.text("Error: You don't have permission to view other players' locations.")
+                        .color(NamedTextColor.RED));
+                return true;
+            }
+
             String targetPlayerName = args[0];
             targetOwnerId = crdStore.resolvePlayerUUID(targetPlayerName);
 
@@ -117,8 +129,8 @@ public class ListLocsCommand implements CommandExecutor, TabCompleter {
 
         List<String> completions = new ArrayList<>();
 
-        // Suggest online player names for the first argument
-        if (args.length == 1) {
+        // Suggest online player names for the first argument (only if player has permission)
+        if (args.length == 1 && ((Player) sender).hasPermission("testplugin.others")) {
             String partial = args[0].toLowerCase();
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 String playerName = onlinePlayer.getName();

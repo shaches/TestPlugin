@@ -18,3 +18,10 @@ commands:
   setloc:
     description: Overwrites an existing location you own. Cannot modify other players' locations.
     usage: /setloc <name> <x> <y> <z>
+permissions:
+  testplugin.basic:
+    description: Allows saving and accessing personal locations.
+    default: true
+  testplugin.others:
+    description: Allows reading and teleporting to other players' locations.
+    default: op
