@@ -10,13 +10,28 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
 
+/**
+ * The TestPlugin class is the main entry point for the plugin.
+ * It handles the initialization and shutdown processes, including the registration of commands and events.
+ *
+ * Functionalities include:
+ * - Loading and saving default configuration files.
+ * - Instantiation of the CoordinateStore for managing saved locations.
+ * - Registering commands such as:
+ *   - `/goto`: Teleports players to saved locations.
+ *   - `/listlocs`: Lists all saved location names.
+ *   - `/setloc`: Updates or creates saved locations.
+ *   - `/storeloc`: Adds a new saved location.
+ * - Setting up event listeners for tab completion and command interception.
+ *
+ * This plugin integrates with the Spigot API and utilizes data persisted in the configuration file.
+ */
 public class TestPlugin extends JavaPlugin {
 
     private CoordinateStore crdStore;
 
     @Override
     public void onEnable() {
-        this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
         this.saveDefaultConfig();
         this.crdStore = new CoordinateStore(this);
 
@@ -36,6 +51,7 @@ public class TestPlugin extends JavaPlugin {
         Objects.requireNonNull(this.getCommand("storeloc")).setExecutor(storeLocCmd);
         Objects.requireNonNull(this.getCommand("storeloc")).setTabCompleter(storeLocCmd);
 
+        this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
         this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore), this);
     }
 

@@ -16,6 +16,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * This class defines the SetLocCommand, which allows players to overwrite the coordinates
+ * of an existing location in the {@link CoordinateStore}.
+ * The command ensures that the location must already exist in the storage to be modified.
+ * Implements {@link CommandExecutor} to handle command execution and {@link TabCompleter}
+ * for providing suggestions during command typing.
+ */
 public class SetLocCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
@@ -49,7 +56,8 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
             }
 
             // HashMap automatically overwrites the value for an existing key
-            crdStore.storePoint(targetName, new double[]{x, y, z});
+            CoordinateStore.SavedLocation existing = crdStore.getPoint(targetName);
+            crdStore.storePoint(targetName, existing.worldName(), x, y, z);
 
             player.sendMessage(Component.text("Overwrote coordinates for '")
                     .color(NamedTextColor.GREEN)

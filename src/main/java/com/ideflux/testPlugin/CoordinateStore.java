@@ -8,10 +8,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Manages the storage and retrieval of saved location points with associated metadata.
+ * This class facilitates saving, loading, and accessing location points,
+ * and integrates with a plugin's configuration file for persistent storage.
+ */
 public class CoordinateStore {
 
-    // The Key is the name (String), the Value is the coordinate array (double[])
-    private final Map<String, double[]> points = new HashMap<>();
+    /**
+     * Immutable value object holding a saved location (world + coordinates).
+     */
+    public record SavedLocation(String worldName, double x, double y, double z) {}
+
+    // The Key is the name (String), the Value is the SavedLocation
+    private final Map<String, SavedLocation> points = new HashMap<>();
     private final JavaPlugin plugin;
 
     public CoordinateStore(JavaPlugin plugin) {
@@ -20,18 +30,18 @@ public class CoordinateStore {
     }
 
     // Overwrites the existing point if the name already exists, or creates a new one
-    public void storePoint(String name, double[] thePoint) {
-        points.put(name.toLowerCase(), thePoint);
+    public void storePoint(String name, String worldName, double x, double y, double z) {
+        points.put(name.toLowerCase(), new SavedLocation(worldName, x, y, z));
     }
 
     // Returns null if the name does not exist
-    public double[] getPoint(String name) {
+    public SavedLocation getPoint(String name) {
         return points.get(name.toLowerCase());
     }
 
     // Provides access to all saved names for tab completion and listing
     public Set<String> getSavedNames() {
-        return points.keySet();
+        return Set.copyOf(points.keySet()); // ✅ Safe immutable copy
     }
 
     public void loadData() {
@@ -40,12 +50,12 @@ public class CoordinateStore {
 
         if (section == null) return;
 
-        // Iterate through all string keys in the config
         for (String key : section.getKeys(false)) {
+            String worldName = section.getString(key + ".world", "world");
             double x = section.getDouble(key + ".x");
             double y = section.getDouble(key + ".y");
             double z = section.getDouble(key + ".z");
-            points.put(key, new double[]{x, y, z});
+            points.put(key, new SavedLocation(worldName, x, y, z));
         }
     }
 
@@ -55,13 +65,14 @@ public class CoordinateStore {
         // Clear old data to prevent deleted keys from persisting
         config.set("storage.points", null);
 
-        for (Map.Entry<String, double[]> entry : points.entrySet()) {
+        for (Map.Entry<String, SavedLocation> entry : points.entrySet()) {
             String name = entry.getKey();
-            double[] coords = entry.getValue();
+            SavedLocation loc = entry.getValue();
 
-            config.set("storage.points." + name + ".x", coords[0]);
-            config.set("storage.points." + name + ".y", coords[1]);
-            config.set("storage.points." + name + ".z", coords[2]);
+            config.set("storage.points." + name + ".world", loc.worldName());
+            config.set("storage.points." + name + ".x", loc.x());
+            config.set("storage.points." + name + ".y", loc.y());
+            config.set("storage.points." + name + ".z", loc.z());
         }
 
         plugin.saveConfig();

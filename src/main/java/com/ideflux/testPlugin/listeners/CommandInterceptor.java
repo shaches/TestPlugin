@@ -8,6 +8,18 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
+/**
+ * The CommandInterceptor class listens for player command preprocess events and modifies commands
+ * that include specially formatted arguments referencing named coordinates stored in the CoordinateStore.
+ *
+ * Commands that include arguments beginning with a designated trigger character (e.g., "#") will have
+ * those arguments replaced with the X, Y, Z floating-point coordinates of the corresponding saved location,
+ * if a match is found in the CoordinateStore.
+ *
+ * If the command is modified, the player is notified of the substitution directly in the chat.
+ *
+ * Implements the {@code Listener} interface for handling Bukkit events.
+ */
 public class CommandInterceptor implements Listener {
 
     private final CoordinateStore crdStore;
@@ -29,11 +41,14 @@ public class CommandInterceptor implements Listener {
             if (part.startsWith("#") && part.length() > 1) {
                 // Isolate the name by removing the '#' prefix
                 String locName = part.substring(1).toLowerCase();
-                double[] coords = crdStore.getPoint(locName);
+                CoordinateStore.SavedLocation coords = crdStore.getPoint(locName);
 
                 if (coords != null) {
                     // Replace the #name argument with floating-point X Y Z values
-                    parts[i] = String.format("%.2f %.2f %.2f", coords[0], coords[1], coords[2]);
+                    parts[i] = String.format("%.2f %.2f %.2f",
+                            coords.x(),
+                            coords.y(),
+                            coords.z());
                     modified = true;
                 }
             }

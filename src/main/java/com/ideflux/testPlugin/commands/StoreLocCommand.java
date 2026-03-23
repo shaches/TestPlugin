@@ -16,6 +16,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Command implementation providing functionality to store player locations
+ * with a custom name as key for future retrieval using {@link CoordinateStore}.
+ * The class handles saving coordinates in the player's current world along with
+ * input validation and feedback for both command execution and tab completion.
+ *
+ * The command accepts four arguments:
+ * - A custom name to associate with the saved location.
+ * - The x, y, and z coordinates of the location.
+ *
+ * The command is executable only by players, not by non-player command senders.
+ * Tab completion is partially implemented, providing location-related suggestions.
+ */
 public class StoreLocCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
@@ -44,7 +57,8 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
             double z = Double.parseDouble(args[3]);
 
             // Puts the new coordinate array into the HashMap using the provided name
-            crdStore.storePoint(name, new double[]{x, y, z});
+            crdStore.storePoint(name, player.getWorld().getName(), x, y, z);
+            
 
             player.sendMessage(Component.text("Coordinates saved as '")
                     .color(NamedTextColor.GREEN)

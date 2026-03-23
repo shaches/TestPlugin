@@ -11,7 +11,7 @@ commands:
     usage: /goto <index>
   storeloc:
     description: Stores a coordinate in the next available index.
-    usage: /storeloc <x> <y> <z>
+    usage: /storeloc <name> <x> <y> <z>
   listlocs:
     description: Lists all stored coordinates and their indices.
     usage: /listlocs
