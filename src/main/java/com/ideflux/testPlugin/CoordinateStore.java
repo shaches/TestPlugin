@@ -116,10 +116,11 @@ public class CoordinateStore {
 
                 playerPoints.put(ownerId, locations);
 
-                // Build username cache from loaded data using online players
-                Player player = Bukkit.getPlayer(ownerId);
-                if (player != null) {
-                    usernameCache.put(player.getName().toLowerCase(), ownerId);
+                // Build username cache from loaded data (UUID lookup is safe and non-blocking)
+                org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(ownerId);
+                String playerName = offlinePlayer.getName();
+                if (playerName != null) {
+                    usernameCache.put(playerName.toLowerCase(), ownerId);
                 }
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Invalid UUID in config: " + uuidString);
