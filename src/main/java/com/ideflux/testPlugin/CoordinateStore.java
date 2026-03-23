@@ -41,6 +41,9 @@ public class CoordinateStore {
     public void storePoint(UUID ownerId, String name, String worldName, double x, double y, double z) {
         playerPoints.computeIfAbsent(ownerId, k -> new HashMap<>())
                 .put(name.toLowerCase(), new SavedLocation(worldName, x, y, z));
+
+        // Add immediate disk persistence to prevent data loss on crash
+        saveData();
     }
 
     /**
