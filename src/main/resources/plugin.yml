@@ -5,3 +5,16 @@ api-version: '1.21'
 authors: [ shaches ]
 description: The World is a dangerous place
 website: ideflux.com
+commands:
+  goto:
+    description: Teleports to a saved coordinate index.
+    usage: /goto <index>
+  storeloc:
+    description: Stores a coordinate in the next available index.
+    usage: /storeloc <x> <y> <z>
+  listlocs:
+    description: Lists all stored coordinates and their indices.
+    usage: /listlocs
+  setloc:
+    description: Overwrites an existing coordinate index.
+    usage: /setloc <index> <x> <y> <z>

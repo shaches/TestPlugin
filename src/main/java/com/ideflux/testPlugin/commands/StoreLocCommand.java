@@ -1,0 +1,84 @@
+package com.ideflux.testPlugin.commands;
+
+import com.ideflux.testPlugin.CoordinateStore;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class StoreLocCommand implements CommandExecutor, TabCompleter {
+
+    private final CoordinateStore crdStore;
+
+    public StoreLocCommand(CoordinateStore crdStore) {
+        this.crdStore = crdStore;
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("This command can only be run by a player.").color(NamedTextColor.RED));
+            return true;
+        }
+
+        // The argument count is increased to 4 to accommodate the string key
+        if (args.length != 4) {
+            player.sendMessage(Component.text("Usage: /storeloc <name> <x> <y> <z>").color(NamedTextColor.RED));
+            return true;
+        }
+
+        try {
+            String name = args[0];
+            double x = Double.parseDouble(args[1]);
+            double y = Double.parseDouble(args[2]);
+            double z = Double.parseDouble(args[3]);
+
+            // Puts the new coordinate array into the HashMap using the provided name
+            crdStore.storePoint(name, new double[]{x, y, z});
+
+            player.sendMessage(Component.text("Coordinates saved as '")
+                    .color(NamedTextColor.GREEN)
+                    .append(Component.text(name).color(NamedTextColor.WHITE))
+                    .append(Component.text("'.")));
+            return true;
+
+        } catch (NumberFormatException e) {
+            player.sendMessage(Component.text("Error: Coordinates must be numeric values.").color(NamedTextColor.RED));
+            return true;
+        }
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        if (!(sender instanceof Player player)) {
+            return Collections.emptyList();
+        }
+
+        List<String> completions = new ArrayList<>();
+        Location loc = player.getLocation();
+
+        // Shifts the coordinate suggestions by one index to account for the name argument
+        if (args.length == 1) {
+            // Returning an empty list for the first argument allows the player to type any custom name
+            return Collections.emptyList();
+        } else if (args.length == 2) {
+            completions.add(String.valueOf(loc.getBlockX()));
+        } else if (args.length == 3) {
+            completions.add(String.valueOf(loc.getBlockY()));
+        } else if (args.length == 4) {
+            completions.add(String.valueOf(loc.getBlockZ()));
+        }
+
+        return completions;
+    }
+}

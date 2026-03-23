@@ -1,20 +1,48 @@
 package com.ideflux.testPlugin;
 
-import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
+import com.ideflux.testPlugin.commands.GotoCommand;
+import com.ideflux.testPlugin.commands.ListLocsCommand;
+import com.ideflux.testPlugin.commands.SetLocCommand;
+import com.ideflux.testPlugin.commands.StoreLocCommand;
+import com.ideflux.testPlugin.listeners.CommandInterceptor;
+import com.ideflux.testPlugin.listeners.TabCompletionInterceptor;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class TestPlugin extends JavaPlugin implements Listener {
+import java.util.Objects;
+
+public class TestPlugin extends JavaPlugin {
+
+    private CoordinateStore crdStore;
+
     @Override
     public void onEnable() {
-        Bukkit.getPluginManager().registerEvents(this, this);
+        this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
+        this.saveDefaultConfig();
+        this.crdStore = new CoordinateStore(this);
+
+        // Instantiate command classes
+        GotoCommand gotoCmd = new GotoCommand(crdStore);
+        Objects.requireNonNull(this.getCommand("goto")).setExecutor(gotoCmd);
+        Objects.requireNonNull(this.getCommand("goto")).setTabCompleter(gotoCmd);
+
+        ListLocsCommand listLocsCmd = new ListLocsCommand(crdStore);
+        Objects.requireNonNull(this.getCommand("listlocs")).setExecutor(listLocsCmd);
+
+        SetLocCommand setLocCmd = new SetLocCommand(crdStore);
+        Objects.requireNonNull(this.getCommand("setloc")).setExecutor(setLocCmd);
+        Objects.requireNonNull(this.getCommand("setloc")).setTabCompleter(setLocCmd);
+
+        StoreLocCommand storeLocCmd = new StoreLocCommand(crdStore);
+        Objects.requireNonNull(this.getCommand("storeloc")).setExecutor(storeLocCmd);
+        Objects.requireNonNull(this.getCommand("storeloc")).setTabCompleter(storeLocCmd);
+
+        this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore), this);
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        event.getPlayer().sendMessage(Component.text("Heeeello, my daaarling " + event.getPlayer().getName() + "!"));
+    @Override
+    public void onDisable() {
+        if (crdStore != null) {
+            crdStore.saveData();
+        }
     }
 }

@@ -59,7 +59,7 @@ tasks.register('deploy') {
     doLast {
         def containerName = "paper-mc"
         def pluginName = project.name
-        def pluginDir = file("C:/Users/mstaf/Documents/Test Server/plugins")
+        def pluginDir = file("C:\\Users\\mstaf\\Documents\\Test Server\\data\\plugins")
         def jarFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar").get().asFile
 
         copy {
