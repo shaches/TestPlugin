@@ -1,7 +1,6 @@
 package com.ideflux.testPlugin;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -41,7 +40,9 @@ public class MessageManager {
         // Create messages.yml if it doesn't exist
         if (!messagesFile.exists()) {
             try {
-                plugin.getDataFolder().mkdirs();
+                if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
+                    plugin.getLogger().warning("Failed to create plugin data folder");
+                }
                 InputStream defaultMessages = plugin.getResource("messages.yml");
                 if (defaultMessages != null) {
                     Files.copy(defaultMessages, messagesFile.toPath());
@@ -60,7 +61,9 @@ public class MessageManager {
     /**
      * Reloads the messages configuration from disk.
      * Useful for live updates without restarting the server.
+     * This method is intentionally kept for future use (e.g., /reload command).
      */
+    @SuppressWarnings("unused")
     public void reload() {
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
@@ -121,7 +124,9 @@ public class MessageManager {
     
     /**
      * Gets a console message with placeholder replacement.
+     * Reserved for future database logging features.
      */
+    @SuppressWarnings("unused")
     public String getConsoleMessage(String path, Map<String, String> placeholders) {
         String raw = getConsoleMessage(path);
         
@@ -139,6 +144,7 @@ public class MessageManager {
         return getMessage("general.player-only");
     }
     
+    @SuppressWarnings("unused")
     public Component getNoPermission() {
         return getMessage("general.no-permission");
     }
@@ -190,6 +196,7 @@ public class MessageManager {
         return getMessage("teleport.failed");
     }
     
+    @SuppressWarnings("unused")
     public Component getListHeader() {
         return getMessage("list.header");
     }
@@ -244,6 +251,7 @@ public class MessageManager {
         return getMessage("errors.invalid-coordinates");
     }
     
+    @SuppressWarnings("unused")
     public Component getDatabaseError() {
         return getMessage("errors.database-error");
     }

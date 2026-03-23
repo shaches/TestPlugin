@@ -34,7 +34,9 @@ public class DatabaseManager {
         try {
             // Ensure data folder exists
             if (!plugin.getDataFolder().exists()) {
-                plugin.getDataFolder().mkdirs();
+                if (!plugin.getDataFolder().mkdirs()) {
+                    plugin.getLogger().warning("Failed to create plugin data folder");
+                }
             }
             
             // Load SQLite JDBC driver
@@ -82,12 +84,12 @@ public class DatabaseManager {
             """;
         
         String createIndexOwner = """
-            CREATE INDEX IF NOT EXISTS idx_owner_uuid 
+            CREATE INDEX IF NOT EXISTS idx_owner_uuid
             ON player_locations(owner_uuid)
             """;
         
         String createIndexName = """
-            CREATE INDEX IF NOT EXISTS idx_location_name 
+            CREATE INDEX IF NOT EXISTS idx_location_name
             ON player_locations(owner_uuid, location_name)
             """;
         
@@ -136,14 +138,21 @@ public class DatabaseManager {
     /**
      * Executes a database operation asynchronously and returns a CompletableFuture.
      * Ensures database operations don't block the main server thread.
+     *
+     * @param operation The database operation to execute
+     * @param <T> The return type of the operation
+     * @return CompletableFuture containing the result of the operation
      */
     public <T> CompletableFuture<T> executeAsync(DatabaseOperation<T> operation) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return operation.execute(getConnection());
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, "Database operation failed!", e);
-                throw new RuntimeException(e);
+                plugin.getLogger().log(Level.SEVERE, "Database operation failed: " + e.getMessage(), e);
+                throw new RuntimeException("Database operation failed", e);
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Unexpected error during database operation: " + e.getMessage(), e);
+                throw new RuntimeException("Unexpected database error", e);
             }
         });
     }

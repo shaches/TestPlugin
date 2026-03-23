@@ -60,9 +60,16 @@ public class DataMigration {
             
             plugin.getLogger().info("Found " + yamlData.size() + " players with saved locations.");
             
+            // Count total locations
+            int totalLocations = yamlData.values().stream()
+                    .mapToInt(Map::size)
+                    .sum();
+            
+            plugin.getLogger().info("Migrating " + totalLocations + " locations from YAML to SQLite...");
+            
             // Import to database
             repository.batchImportLocations(yamlData).thenRun(() -> {
-                plugin.getLogger().info("Successfully migrated all location data to SQLite!");
+                plugin.getLogger().info("Successfully migrated " + totalLocations + " locations to SQLite!");
                 
                 // Mark migration as complete
                 markMigrationComplete();
@@ -71,13 +78,15 @@ public class DataMigration {
                 createYamlBackup();
                 
             }).exceptionally(ex -> {
-                plugin.getLogger().severe("Migration failed: " + ex.getMessage());
+                plugin.getLogger().severe("Migration failed after processing YAML data: " + ex.getMessage());
+                plugin.getLogger().severe("Your YAML data is still intact. Please report this error.");
                 ex.printStackTrace();
                 return null;
             });
             
         } catch (Exception e) {
-            plugin.getLogger().severe("Error during migration: " + e.getMessage());
+            plugin.getLogger().severe("Critical error during migration initialization: " + e.getMessage());
+            plugin.getLogger().severe("Migration aborted. Your YAML data is still intact.");
             e.printStackTrace();
         }
     }
@@ -115,7 +124,8 @@ public class DataMigration {
                 plugin.getLogger().info("Cleared YAML location data (backup preserved).");
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to create backup: " + e.getMessage());
+            plugin.getLogger().warning("Failed to create YAML backup: " + e.getMessage());
+            plugin.getLogger().warning("Migration was successful, but backup creation failed. Original config.yml is still intact.");
         }
     }
 }

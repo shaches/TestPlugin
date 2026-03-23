@@ -53,8 +53,19 @@ public class CoordinateStore {
     /**
      * Stores a point for the specified owner. Only the owner can create or modify their locations.
      * Thread-safe: Updates both cache and database asynchronously.
+     *
+     * @param ownerId The UUID of the player who owns this location
+     * @param name The name identifier for the location (will be lowercased)
+     * @param worldName The name of the world where the location exists
+     * @param x The X coordinate
+     * @param y The Y coordinate
+     * @param z The Z coordinate
      */
     public void storePoint(UUID ownerId, String name, String worldName, double x, double y, double z) {
+        if (ownerId == null || name == null || worldName == null) {
+            plugin.getLogger().warning("Attempted to store location with null parameters");
+            return;
+        }
         SavedLocation location = new SavedLocation(worldName, x, y, z);
         
         // Update in-memory cache immediately
@@ -64,7 +75,8 @@ public class CoordinateStore {
         // Persist to database asynchronously
         repository.saveLocation(ownerId, name, worldName, x, y, z)
                 .exceptionally(ex -> {
-                    plugin.getLogger().severe("Failed to save location to database: " + ex.getMessage());
+                    plugin.getLogger().severe("Failed to save location '" + name + "' for player " + ownerId + " to database: " + ex.getMessage());
+                    ex.printStackTrace();
                     return null;
                 });
     }
@@ -72,8 +84,15 @@ public class CoordinateStore {
     /**
      * Retrieves a point owned by the specified player. Returns null if not found.
      * Thread-safe: Reads from in-memory cache for fast access.
+     *
+     * @param ownerId The UUID of the player who owns the location
+     * @param name The name of the location to retrieve
+     * @return The SavedLocation if found, null otherwise
      */
     public SavedLocation getPoint(UUID ownerId, String name) {
+        if (ownerId == null || name == null) {
+            return null;
+        }
         Map<String, SavedLocation> ownerMap = locationCache.get(ownerId);
         if (ownerMap == null) return null;
         return ownerMap.get(name.toLowerCase());
@@ -83,8 +102,15 @@ public class CoordinateStore {
      * Deletes a saved location owned by the specified player.
      * Returns true if the location was deleted, false if it didn't exist.
      * Thread-safe: Updates both cache and database.
+     *
+     * @param ownerId The UUID of the player who owns the location
+     * @param name The name of the location to delete
+     * @return true if deleted, false if not found
      */
     public boolean deletePoint(UUID ownerId, String name) {
+        if (ownerId == null || name == null) {
+            return false;
+        }
         Map<String, SavedLocation> ownerMap = locationCache.get(ownerId);
         if (ownerMap == null) return false;
         
@@ -99,7 +125,8 @@ public class CoordinateStore {
             // Delete from database asynchronously
             repository.deleteLocation(ownerId, name)
                     .exceptionally(ex -> {
-                        plugin.getLogger().severe("Failed to delete location from database: " + ex.getMessage());
+                        plugin.getLogger().severe("Failed to delete location '" + name + "' for player " + ownerId + " from database: " + ex.getMessage());
+                        ex.printStackTrace();
                         return false;
                     });
         }
@@ -110,8 +137,14 @@ public class CoordinateStore {
     /**
      * Returns all location names owned by the specified player.
      * Thread-safe: Reads from in-memory cache.
+     *
+     * @param ownerId The UUID of the player whose location names to retrieve
+     * @return An immutable set of location names, or empty set if player has none
      */
     public Set<String> getSavedNames(UUID ownerId) {
+        if (ownerId == null) {
+            return Collections.emptySet();
+        }
         Map<String, SavedLocation> ownerMap = locationCache.get(ownerId);
         if (ownerMap == null) return Collections.emptySet();
         return Set.copyOf(ownerMap.keySet());
@@ -154,7 +187,7 @@ public class CoordinateStore {
         // Persist to database asynchronously
         repository.updateUsernameCache(username, uuid)
                 .exceptionally(ex -> {
-                    plugin.getLogger().severe("Failed to update username cache in database: " + ex.getMessage());
+                    plugin.getLogger().warning("Failed to update username cache for '" + username + "' in database: " + ex.getMessage());
                     return null;
                 });
     }
@@ -187,9 +220,15 @@ public class CoordinateStore {
             }
             
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .thenRun(() -> plugin.getLogger().info("Loaded " + locationCache.size() + " players with saved locations."))
+                    .thenRun(() -> {
+                        int totalLocations = locationCache.values().stream()
+                                .mapToInt(Map::size)
+                                .sum();
+                        plugin.getLogger().info("Loaded " + totalLocations + " locations for " + locationCache.size() + " players from database.");
+                    })
                     .exceptionally(ex -> {
                         plugin.getLogger().severe("Error loading data from database: " + ex.getMessage());
+                        ex.printStackTrace();
                         return null;
                     });
         });
