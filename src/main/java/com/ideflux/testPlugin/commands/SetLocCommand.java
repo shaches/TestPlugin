@@ -49,15 +49,15 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
             double y = Double.parseDouble(args[2]);
             double z = Double.parseDouble(args[3]);
 
-            // Enforce overwrite-only logic: deny operation if the key does not exist
-            if (crdStore.getPoint(targetName) == null) {
-                player.sendMessage(Component.text("Error: Location '" + targetName + "' does not exist. Use /storeloc to create it.").color(NamedTextColor.RED));
+            // Enforce ownership: only allow modifying locations owned by the player
+            CoordinateStore.SavedLocation existing = crdStore.getPoint(player.getUniqueId(), targetName);
+            if (existing == null) {
+                player.sendMessage(Component.text("Error: Location '" + targetName + "' does not exist in your saved locations. Use /storeloc to create it.").color(NamedTextColor.RED));
                 return true;
             }
 
-            // HashMap automatically overwrites the value for an existing key
-            CoordinateStore.SavedLocation existing = crdStore.getPoint(targetName);
-            crdStore.storePoint(targetName, existing.worldName(), x, y, z);
+            // Update the location (owner can only modify their own locations)
+            crdStore.storePoint(player.getUniqueId(), targetName, existing.worldName(), x, y, z);
 
             player.sendMessage(Component.text("Overwrote coordinates for '")
                     .color(NamedTextColor.GREEN)
@@ -79,9 +79,9 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
 
         List<String> completions = new ArrayList<>();
 
-        // Suggest valid existing names for the first argument
+        // Suggest valid existing names owned by the player for the first argument
         if (args.length == 1) {
-            for (String name : crdStore.getSavedNames()) {
+            for (String name : crdStore.getSavedNames(player.getUniqueId())) {
                 if (name.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(name);
                 }

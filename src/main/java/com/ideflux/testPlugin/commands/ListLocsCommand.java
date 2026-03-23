@@ -6,39 +6,35 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * The ListLocsCommand class implements a command executor that lists all saved
- * coordinates stored within a {@link CoordinateStore}. It provides players with a formatted
- * list of saved locations and interactive options to teleport to specific coordinates.
+ * The ListLocsCommand class implements a command executor that lists saved
+ * coordinates with support for viewing both personal and other players' locations.
  *
- * This command is useful for managing and accessing previously saved locations in the game.
- * The saved locations are displayed with their names, coordinates, and hover/click features
- * for teleportation.
- *
- * Constructor:
- * - {@code ListLocsCommand(CoordinateStore crdStore)}: Initializes the command with a given
- *   {@link CoordinateStore} instance to manage saved locations.
+ * Syntax:
+ * - /listlocs        - List own locations
+ * - /listlocs [player] - List another player's locations (read-only access)
  *
  * Key Features:
- * - Only accessible to player senders; non-player senders are ignored.
- * - Displays a message if no saved coordinates are available.
- * - Lists all saved coordinate names and their respective (x, y, z) values.
- * - Includes hoverable text for additional information and clickable text to teleport to
- *   the specified coordinates.
- *
- * Implementation Details:
- * - Utilizes Adventure components to format and interact with the displayed message.
- * - Retrieves saved names and coordinates from the provided {@link CoordinateStore}.
+ * - Displays a formatted list of saved locations with coordinates
+ * - Interactive hover/click features for teleportation
+ * - Read-only access to other players' locations
  */
-public class ListLocsCommand implements CommandExecutor {
+public class ListLocsCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
 
@@ -52,20 +48,53 @@ public class ListLocsCommand implements CommandExecutor {
             return true;
         }
 
-        Set<String> savedNames = crdStore.getSavedNames();
+        UUID targetOwnerId;
+        String displayName;
 
-        if (savedNames.isEmpty()) {
-            player.sendMessage(Component.text("No coordinates have been saved yet.").color(NamedTextColor.RED));
+        // Determine whose locations to display
+        if (args.length == 0) {
+            // Show own locations
+            targetOwnerId = player.getUniqueId();
+            displayName = "Your";
+        } else if (args.length == 1) {
+            // Show another player's locations
+            String targetPlayerName = args[0];
+            OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
+
+            if (!targetPlayer.hasPlayedBefore() && !targetPlayer.isOnline()) {
+                player.sendMessage(Component.text("Error: Player '" + targetPlayerName + "' not found.").color(NamedTextColor.RED));
+                return true;
+            }
+
+            targetOwnerId = targetPlayer.getUniqueId();
+            displayName = targetPlayerName + "'s";
+        } else {
+            player.sendMessage(Component.text("Usage: /listlocs [player]").color(NamedTextColor.RED));
             return true;
         }
 
-        player.sendMessage(Component.text("--- Saved Coordinates ---")
+        Set<String> savedNames = crdStore.getSavedNames(targetOwnerId);
+
+        if (savedNames.isEmpty()) {
+            player.sendMessage(Component.text(displayName + " saved locations are empty.").color(NamedTextColor.RED));
+            return true;
+        }
+
+        player.sendMessage(Component.text("--- " + displayName + " Saved Coordinates ---")
                 .color(NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
 
         for (String name : savedNames) {
-            CoordinateStore.SavedLocation c = crdStore.getPoint(name);
+            CoordinateStore.SavedLocation c = crdStore.getPoint(targetOwnerId, name);
             String coordsText = String.format("%.1f, %.1f, %.1f", c.x(), c.y(), c.z());
+
+            // Construct the goto command based on ownership
+            String gotoCommand;
+            if (targetOwnerId.equals(player.getUniqueId())) {
+                gotoCommand = "/goto " + name;
+            } else {
+                gotoCommand = "/goto " + args[0] + ":" + name;
+            }
 
             Component lineComponent = Component.text("[" + name + "] ")
                     .color(NamedTextColor.AQUA)
@@ -73,11 +102,33 @@ public class ListLocsCommand implements CommandExecutor {
                     .hoverEvent(HoverEvent.showText(
                             Component.text("Click to teleport to " + name).color(NamedTextColor.GREEN)
                     ))
-                    .clickEvent(ClickEvent.runCommand("/goto " + name));
+                    .clickEvent(ClickEvent.runCommand(gotoCommand));
 
             player.sendMessage(lineComponent);
         }
 
         return true;
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        if (!(sender instanceof Player)) {
+            return null;
+        }
+
+        List<String> completions = new ArrayList<>();
+
+        // Suggest online player names for the first argument
+        if (args.length == 1) {
+            String partial = args[0].toLowerCase();
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                String playerName = onlinePlayer.getName();
+                if (playerName.toLowerCase().startsWith(partial)) {
+                    completions.add(playerName);
+                }
+            }
+        }
+
+        return completions;
     }
 }

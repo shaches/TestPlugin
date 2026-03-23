@@ -56,9 +56,9 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
             double y = Double.parseDouble(args[2]);
             double z = Double.parseDouble(args[3]);
 
-            // Puts the new coordinate array into the HashMap using the provided name
-            crdStore.storePoint(name, player.getWorld().getName(), x, y, z);
-            
+            // Store the location under the player's UUID (ownership enforcement)
+            crdStore.storePoint(player.getUniqueId(), name, player.getWorld().getName(), x, y, z);
+
 
             player.sendMessage(Component.text("Coordinates saved as '")
                     .color(NamedTextColor.GREEN)

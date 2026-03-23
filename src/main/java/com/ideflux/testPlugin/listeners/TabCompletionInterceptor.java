@@ -1,6 +1,9 @@
 package com.ideflux.testPlugin.listeners;
 
 import com.ideflux.testPlugin.CoordinateStore;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import com.destroystokyo.paper.event.server.AsyncTabCompleteEvent;
@@ -13,14 +16,12 @@ import java.util.List;
  * modifies or appends auto-completion suggestions based on user input and saved data
  * stored in a {@code CoordinateStore}.
  *
- * This class enables users to tab-complete strings starting with a designated trigger
- * character (e.g., "#") by matching against saved names available in the {@code CoordinateStore}.
+ * Supported formats:
+ * - #name          - Tab-completes the player's own location names
+ * - #player:name   - Tab-completes another player's location names (read-only access)
  *
- * If the user provides a partial input that begins with the trigger character (e.g., "#partialName"),
- * the class dynamically suggests matching completions by prepending "#" to each matching saved
- * name in the {@code CoordinateStore}.
- *
- * Implements the {@code Listener} interface to handle Bukkit events.
+ * If the user provides a partial input that begins with "#", the class dynamically suggests
+ * matching completions from both the player's own locations and other players' locations.
  */
 public class TabCompletionInterceptor implements Listener {
 
@@ -32,17 +33,52 @@ public class TabCompletionInterceptor implements Listener {
 
     @EventHandler
     public void onAsyncTabComplete(AsyncTabCompleteEvent event) {
+        if (!(event.getSender() instanceof Player player)) {
+            return;
+        }
+
         String buffer = event.getBuffer();
         String[] args = buffer.split(" ", -1); // -1 preserves trailing empty strings
         String lastArg = args[args.length - 1];
 
         if (lastArg.startsWith("#")) {
-            String partialName = lastArg.substring(1).toLowerCase();
+            String reference = lastArg.substring(1); // Remove '#' prefix
             List<String> newCompletions = new ArrayList<>(event.getCompletions());
 
-            for (String name : crdStore.getSavedNames()) {
-                if (name.toLowerCase().startsWith(partialName)) {
-                    newCompletions.add("#" + name);
+            // Check if the reference contains a colon (cross-player reference)
+            if (reference.contains(":")) {
+                String[] refParts = reference.split(":", 2);
+                String targetPlayerName = refParts[0];
+                String partialLocationName = refParts.length > 1 ? refParts[1].toLowerCase() : "";
+
+                // Resolve the target player's UUID
+                OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetPlayerName);
+                if (targetPlayer.hasPlayedBefore() || targetPlayer.isOnline()) {
+                    // Suggest the target player's location names
+                    for (String locName : crdStore.getSavedNames(targetPlayer.getUniqueId())) {
+                        if (locName.toLowerCase().startsWith(partialLocationName)) {
+                            newCompletions.add("#" + targetPlayerName + ":" + locName);
+                        }
+                    }
+                }
+            } else {
+                String partialName = reference.toLowerCase();
+
+                // Suggest the player's own location names
+                for (String name : crdStore.getSavedNames(player.getUniqueId())) {
+                    if (name.toLowerCase().startsWith(partialName)) {
+                        newCompletions.add("#" + name);
+                    }
+                }
+
+                // Suggest online player names with colon suffix for cross-player completion
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                    if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
+                        String playerPrefix = onlinePlayer.getName().toLowerCase() + ":";
+                        if (playerPrefix.startsWith(partialName)) {
+                            newCompletions.add("#" + onlinePlayer.getName() + ":");
+                        }
+                    }
                 }
             }
 

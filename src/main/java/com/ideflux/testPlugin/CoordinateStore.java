@@ -4,14 +4,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Manages the storage and retrieval of saved location points with associated metadata.
- * This class facilitates saving, loading, and accessing location points,
- * and integrates with a plugin's configuration file for persistent storage.
+ * Manages the storage and retrieval of saved location points with per-player ownership.
+ * Each player has their own isolated map of named locations with full CRUD access.
+ * Other players have read-only access to view and use (but not modify) these locations.
  */
 public class CoordinateStore {
 
@@ -20,8 +18,8 @@ public class CoordinateStore {
      */
     public record SavedLocation(String worldName, double x, double y, double z) {}
 
-    // The Key is the name (String), the Value is the SavedLocation
-    private final Map<String, SavedLocation> points = new HashMap<>();
+    // Nested map: UUID -> (location name -> SavedLocation)
+    private final Map<UUID, Map<String, SavedLocation>> playerPoints = new HashMap<>();
     private final JavaPlugin plugin;
 
     public CoordinateStore(JavaPlugin plugin) {
@@ -29,33 +27,65 @@ public class CoordinateStore {
         loadData();
     }
 
-    // Overwrites the existing point if the name already exists, or creates a new one
-    public void storePoint(String name, String worldName, double x, double y, double z) {
-        points.put(name.toLowerCase(), new SavedLocation(worldName, x, y, z));
+    /**
+     * Stores a point for the specified owner. Only the owner can create or modify their locations.
+     */
+    public void storePoint(UUID ownerId, String name, String worldName, double x, double y, double z) {
+        playerPoints.computeIfAbsent(ownerId, k -> new HashMap<>())
+                .put(name.toLowerCase(), new SavedLocation(worldName, x, y, z));
     }
 
-    // Returns null if the name does not exist
-    public SavedLocation getPoint(String name) {
-        return points.get(name.toLowerCase());
+    /**
+     * Retrieves a point owned by the specified player. Returns null if not found.
+     */
+    public SavedLocation getPoint(UUID ownerId, String name) {
+        Map<String, SavedLocation> ownerMap = playerPoints.get(ownerId);
+        if (ownerMap == null) return null;
+        return ownerMap.get(name.toLowerCase());
     }
 
-    // Provides access to all saved names for tab completion and listing
-    public Set<String> getSavedNames() {
-        return Set.copyOf(points.keySet()); // ✅ Safe immutable copy
+    /**
+     * Returns all location names owned by the specified player.
+     */
+    public Set<String> getSavedNames(UUID ownerId) {
+        Map<String, SavedLocation> ownerMap = playerPoints.get(ownerId);
+        if (ownerMap == null) return Collections.emptySet();
+        return Set.copyOf(ownerMap.keySet());
+    }
+
+    /**
+     * Returns all player UUIDs that have saved locations.
+     */
+    public Set<UUID> getAllOwners() {
+        return Set.copyOf(playerPoints.keySet());
     }
 
     public void loadData() {
         FileConfiguration config = plugin.getConfig();
-        ConfigurationSection section = config.getConfigurationSection("storage.points");
+        ConfigurationSection storageSection = config.getConfigurationSection("storage.points");
 
-        if (section == null) return;
+        if (storageSection == null) return;
 
-        for (String key : section.getKeys(false)) {
-            String worldName = section.getString(key + ".world", "world");
-            double x = section.getDouble(key + ".x");
-            double y = section.getDouble(key + ".y");
-            double z = section.getDouble(key + ".z");
-            points.put(key, new SavedLocation(worldName, x, y, z));
+        for (String uuidString : storageSection.getKeys(false)) {
+            try {
+                UUID ownerId = UUID.fromString(uuidString);
+                ConfigurationSection playerSection = storageSection.getConfigurationSection(uuidString);
+
+                if (playerSection == null) continue;
+
+                Map<String, SavedLocation> locations = new HashMap<>();
+                for (String locationName : playerSection.getKeys(false)) {
+                    String worldName = playerSection.getString(locationName + ".world", "world");
+                    double x = playerSection.getDouble(locationName + ".x");
+                    double y = playerSection.getDouble(locationName + ".y");
+                    double z = playerSection.getDouble(locationName + ".z");
+                    locations.put(locationName, new SavedLocation(worldName, x, y, z));
+                }
+
+                playerPoints.put(ownerId, locations);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Invalid UUID in config: " + uuidString);
+            }
         }
     }
 
@@ -65,14 +95,20 @@ public class CoordinateStore {
         // Clear old data to prevent deleted keys from persisting
         config.set("storage.points", null);
 
-        for (Map.Entry<String, SavedLocation> entry : points.entrySet()) {
-            String name = entry.getKey();
-            SavedLocation loc = entry.getValue();
+        for (Map.Entry<UUID, Map<String, SavedLocation>> playerEntry : playerPoints.entrySet()) {
+            String uuidString = playerEntry.getKey().toString();
+            Map<String, SavedLocation> locations = playerEntry.getValue();
 
-            config.set("storage.points." + name + ".world", loc.worldName());
-            config.set("storage.points." + name + ".x", loc.x());
-            config.set("storage.points." + name + ".y", loc.y());
-            config.set("storage.points." + name + ".z", loc.z());
+            for (Map.Entry<String, SavedLocation> locEntry : locations.entrySet()) {
+                String name = locEntry.getKey();
+                SavedLocation loc = locEntry.getValue();
+
+                String path = "storage.points." + uuidString + "." + name;
+                config.set(path + ".world", loc.worldName());
+                config.set(path + ".x", loc.x());
+                config.set(path + ".y", loc.y());
+                config.set(path + ".z", loc.z());
+            }
         }
 
         plugin.saveConfig();
