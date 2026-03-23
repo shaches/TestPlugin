@@ -1,0 +1,61 @@
+# TestPlugin Messages Configuration
+# Supports color codes using & symbol (e.g., &a for green, &c for red)
+# Placeholders: {player}, {name}, {x}, {y}, {z}, {world}, {owner}, {command}
+
+# General Messages
+general:
+  player-only: "&cThis command can only be run by a player."
+  no-permission: "&cYou don't have permission to use this command."
+  
+# Permission-specific messages
+permissions:
+  no-basic: "&cError: You don't have permission to save locations."
+  no-others: "&cError: You don't have permission to access other players' locations."
+
+# Location storage messages
+storage:
+  saved: "&aCoordinates saved as '&f{name}&a'."
+  updated: "&aLocation '&f{name}&a' has been updated."
+  deleted: "&aLocation '&f{name}&a' has been deleted."
+  not-found: "&cError: Location '&f{name}&c' not found."
+  player-not-found: "&cError: Player '&f{player}&c' not found or has no saved locations."
+  invalid-name: "&cError: Location name must only contain letters, numbers, underscores, and hyphens."
+  
+# Teleport messages
+teleport:
+  success: "&aTeleported to '&f{name}&a'."
+  cross-player-success: "&aTeleported to &f{owner}&a's location '&f{name}&a'."
+  failed: "&cTeleportation failed. The world may not exist."
+  
+# List locations messages
+list:
+  header: "&6=== Saved Locations ==="
+  own-header: "&6=== Your Saved Locations ==="
+  other-header: "&6=== {player}'s Saved Locations ==="
+  entry: "&e- &f{name} &7({world}: {x}, {y}, {z})"
+  empty: "&7No saved locations found."
+  
+# Command usage messages
+usage:
+  goto: "&cUsage: /goto <name> or /goto <player>:<name>"
+  storeloc: "&cUsage: /storeloc <name> <x> <y> <z>"
+  setloc: "&cUsage: /setloc <name> <x> <y> <z>"
+  deleteloc: "&cUsage: /deleteloc <name>"
+  listlocs: "&cUsage: /listlocs [player]"
+  
+# Command interceptor messages
+interceptor:
+  parsed-command: "&7Parsed command: &b{command}"
+  
+# Error messages
+errors:
+  invalid-coordinates: "&cError: Coordinates must be numeric values."
+  database-error: "&cError: Failed to save location. Please contact an administrator."
+  
+# Database messages (console only, not user-facing)
+database:
+  initialized: "SQLite database initialized successfully"
+  migration-start: "Starting migration from YAML to SQLite..."
+  migration-complete: "Successfully migrated all location data to SQLite!"
+  migration-failed: "Migration failed: {error}"
+  backup-created: "Created backup at: config.yml.backup"

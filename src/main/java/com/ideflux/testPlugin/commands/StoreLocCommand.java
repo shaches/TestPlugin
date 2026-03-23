@@ -1,8 +1,7 @@
 package com.ideflux.testPlugin.commands;
 
 import com.ideflux.testPlugin.CoordinateStore;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import com.ideflux.testPlugin.MessageManager;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -32,38 +31,38 @@ import java.util.List;
 public class StoreLocCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
+    private final MessageManager messages;
 
-    public StoreLocCommand(CoordinateStore crdStore) {
+    public StoreLocCommand(CoordinateStore crdStore, MessageManager messages) {
         this.crdStore = crdStore;
+        this.messages = messages;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("This command can only be run by a player.").color(NamedTextColor.RED));
+            sender.sendMessage(messages.getPlayerOnly());
             return true;
         }
 
         // Require basic permission to save locations
         if (!player.hasPermission("testplugin.basic")) {
-            player.sendMessage(Component.text("Error: You don't have permission to save locations.")
-                    .color(NamedTextColor.RED));
+            player.sendMessage(messages.getNoBasicPermission());
             return true;
         }
 
         // The argument count is increased to 4 to accommodate the string key
         if (args.length != 4) {
-            player.sendMessage(Component.text("Usage: /storeloc <name> <x> <y> <z>").color(NamedTextColor.RED));
+            player.sendMessage(messages.getUsageStoreLoc());
             return true;
         }
 
         try {
             String name = args[0];
 
-            // Validate location name to prevent YAML corruption
+            // Validate location name to prevent database issues
             if (!name.matches("^[a-zA-Z0-9_-]+$")) {
-                player.sendMessage(Component.text("Error: Location name must only contain letters, numbers, underscores, and hyphens.")
-                        .color(NamedTextColor.RED));
+                player.sendMessage(messages.getInvalidName());
                 return true;
             }
 
@@ -74,14 +73,11 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
             // Store the location under the player's UUID (ownership enforcement)
             crdStore.storePoint(player.getUniqueId(), name, player.getWorld().getName(), x, y, z);
 
-            player.sendMessage(Component.text("Coordinates saved as '")
-                    .color(NamedTextColor.GREEN)
-                    .append(Component.text(name).color(NamedTextColor.WHITE))
-                    .append(Component.text("'.")));
+            player.sendMessage(messages.getLocationSaved(name));
             return true;
 
         } catch (NumberFormatException e) {
-            player.sendMessage(Component.text("Error: Coordinates must be numeric values.").color(NamedTextColor.RED));
+            player.sendMessage(messages.getInvalidCoordinates());
             return true;
         }
     }

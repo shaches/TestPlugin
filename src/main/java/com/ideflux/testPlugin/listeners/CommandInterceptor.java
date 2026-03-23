@@ -1,10 +1,7 @@
 package com.ideflux.testPlugin.listeners;
 
 import com.ideflux.testPlugin.CoordinateStore;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
+import com.ideflux.testPlugin.MessageManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,6 +28,7 @@ import java.util.UUID;
 public class CommandInterceptor implements Listener {
 
     private final CoordinateStore crdStore;
+    private final MessageManager messages;
     
     // Whitelist of commands that support coordinate substitution
     private static final Set<String> WHITELISTED_COMMANDS = Set.of(
@@ -46,8 +44,9 @@ public class CommandInterceptor implements Listener {
             "/goto"
     );
 
-    public CommandInterceptor(CoordinateStore crdStore) {
+    public CommandInterceptor(CoordinateStore crdStore, MessageManager messages) {
         this.crdStore = crdStore;
+        this.messages = messages;
     }
 
     @EventHandler
@@ -122,9 +121,7 @@ public class CommandInterceptor implements Listener {
             event.setMessage(newCommand);
 
             // Notify the player of the substitution
-            player.sendMessage(Component.text("Parsed command: ")
-                    .color(NamedTextColor.GRAY)
-                    .append(Component.text(newCommand).color(NamedTextColor.AQUA)));
+            player.sendMessage(messages.getParsedCommand(newCommand));
         }
     }
 }

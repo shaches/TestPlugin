@@ -22,6 +22,7 @@ import java.util.Objects;
  * Functionalities include:
  * - Loading and saving default configuration files.
  * - Initializing SQLite database for scalable location storage.
+ * - Loading customizable messages from messages.yml.
  * - Instantiation of the CoordinateStore for managing saved locations.
  * - Automatic migration from YAML to SQLite on first run.
  * - Registering commands such as:
@@ -38,10 +39,14 @@ public class TestPlugin extends JavaPlugin {
 
     private DatabaseManager dbManager;
     private CoordinateStore crdStore;
+    private MessageManager messages;
 
     @Override
     public void onEnable() {
         this.saveDefaultConfig();
+        
+        // Initialize message manager
+        this.messages = new MessageManager(this);
         
         // Initialize database
         this.dbManager = new DatabaseManager(this);
@@ -51,27 +56,28 @@ public class TestPlugin extends JavaPlugin {
         this.crdStore = new CoordinateStore(this, dbManager);
 
         // Instantiate command classes
-        GotoCommand gotoCmd = new GotoCommand(crdStore);
+        GotoCommand gotoCmd = new GotoCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("goto")).setExecutor(gotoCmd);
         Objects.requireNonNull(this.getCommand("goto")).setTabCompleter(gotoCmd);
 
-        ListLocsCommand listLocsCmd = new ListLocsCommand(crdStore);
+        ListLocsCommand listLocsCmd = new ListLocsCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("listlocs")).setExecutor(listLocsCmd);
+        Objects.requireNonNull(this.getCommand("listlocs")).setTabCompleter(listLocsCmd);
 
-        SetLocCommand setLocCmd = new SetLocCommand(crdStore);
+        SetLocCommand setLocCmd = new SetLocCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("setloc")).setExecutor(setLocCmd);
         Objects.requireNonNull(this.getCommand("setloc")).setTabCompleter(setLocCmd);
 
-        StoreLocCommand storeLocCmd = new StoreLocCommand(crdStore);
+        StoreLocCommand storeLocCmd = new StoreLocCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("storeloc")).setExecutor(storeLocCmd);
         Objects.requireNonNull(this.getCommand("storeloc")).setTabCompleter(storeLocCmd);
 
-        DeleteLocCommand deleteLocCmd = new DeleteLocCommand(crdStore);
+        DeleteLocCommand deleteLocCmd = new DeleteLocCommand(crdStore, messages);
         Objects.requireNonNull(this.getCommand("deleteloc")).setExecutor(deleteLocCmd);
         Objects.requireNonNull(this.getCommand("deleteloc")).setTabCompleter(deleteLocCmd);
 
         this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
-        this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore), this);
+        this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore, messages), this);
         this.getServer().getPluginManager().registerEvents(new PlayerJoinListener(crdStore), this);
         
         // Perform migration from YAML to SQLite if needed

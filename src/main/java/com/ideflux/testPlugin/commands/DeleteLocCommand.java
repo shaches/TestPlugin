@@ -1,8 +1,7 @@
 package com.ideflux.testPlugin.commands;
 
 import com.ideflux.testPlugin.CoordinateStore;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import com.ideflux.testPlugin.MessageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,27 +24,28 @@ import java.util.Set;
 public class DeleteLocCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
+    private final MessageManager messages;
 
-    public DeleteLocCommand(CoordinateStore crdStore) {
+    public DeleteLocCommand(CoordinateStore crdStore, MessageManager messages) {
         this.crdStore = crdStore;
+        this.messages = messages;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("This command can only be run by a player.").color(NamedTextColor.RED));
+            sender.sendMessage(messages.getPlayerOnly());
             return true;
         }
 
         // Require basic permission to delete locations
         if (!player.hasPermission("testplugin.basic")) {
-            player.sendMessage(Component.text("Error: You don't have permission to delete locations.")
-                    .color(NamedTextColor.RED));
+            player.sendMessage(messages.getNoBasicPermission());
             return true;
         }
 
         if (args.length != 1) {
-            player.sendMessage(Component.text("Usage: /deleteloc <name>").color(NamedTextColor.RED));
+            player.sendMessage(messages.getUsageDeleteLoc());
             return true;
         }
 
@@ -53,20 +53,14 @@ public class DeleteLocCommand implements CommandExecutor, TabCompleter {
         
         // Check if the location exists
         if (crdStore.getPoint(player.getUniqueId(), name) == null) {
-            player.sendMessage(Component.text("Error: Location '")
-                    .color(NamedTextColor.RED)
-                    .append(Component.text(name).color(NamedTextColor.WHITE))
-                    .append(Component.text("' not found.")));
+            player.sendMessage(messages.getLocationNotFound(name));
             return true;
         }
 
         // Delete the location
         crdStore.deletePoint(player.getUniqueId(), name);
 
-        player.sendMessage(Component.text("Location '")
-                .color(NamedTextColor.GREEN)
-                .append(Component.text(name).color(NamedTextColor.WHITE))
-                .append(Component.text("' has been deleted.")));
+        player.sendMessage(messages.getLocationDeleted(name));
 
         return true;
     }

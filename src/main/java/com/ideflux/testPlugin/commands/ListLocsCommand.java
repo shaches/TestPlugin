@@ -1,13 +1,12 @@
 package com.ideflux.testPlugin.commands;
 
 import com.ideflux.testPlugin.CoordinateStore;
+import com.ideflux.testPlugin.MessageManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -37,79 +36,77 @@ import java.util.UUID;
 public class ListLocsCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
+    private final MessageManager messages;
 
-    public ListLocsCommand(CoordinateStore crdStore) {
+    public ListLocsCommand(CoordinateStore crdStore, MessageManager messages) {
         this.crdStore = crdStore;
+        this.messages = messages;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
+            sender.sendMessage(messages.getPlayerOnly());
             return true;
         }
 
         UUID targetOwnerId;
-        String displayName;
+        String targetPlayerName = null;
 
         // Determine whose locations to display
         if (args.length == 0) {
             // Show own locations - require basic permission
             if (!player.hasPermission("testplugin.basic")) {
-                player.sendMessage(Component.text("Error: You don't have permission to use saved locations.")
-                        .color(NamedTextColor.RED));
+                player.sendMessage(messages.getNoBasicPermission());
                 return true;
             }
 
             targetOwnerId = player.getUniqueId();
-            displayName = "Your";
         } else if (args.length == 1) {
             // Show another player's locations - require others permission
             if (!player.hasPermission("testplugin.others")) {
-                player.sendMessage(Component.text("Error: You don't have permission to view other players' locations.")
-                        .color(NamedTextColor.RED));
+                player.sendMessage(messages.getNoOthersPermission());
                 return true;
             }
 
-            String targetPlayerName = args[0];
+            targetPlayerName = args[0];
             targetOwnerId = crdStore.resolvePlayerUUID(targetPlayerName);
 
             if (targetOwnerId == null) {
-                player.sendMessage(Component.text("Error: Player '" + targetPlayerName + "' not found. Player must be online or have been seen before.").color(NamedTextColor.RED));
+                player.sendMessage(messages.getPlayerNotFound(targetPlayerName));
                 return true;
             }
-
-            displayName = targetPlayerName + "'s";
         } else {
-            player.sendMessage(Component.text("Usage: /listlocs [player]").color(NamedTextColor.RED));
+            player.sendMessage(messages.getUsageListLocs());
             return true;
         }
 
         Set<String> savedNames = crdStore.getSavedNames(targetOwnerId);
 
         if (savedNames.isEmpty()) {
-            player.sendMessage(Component.text(displayName + " saved locations are empty.").color(NamedTextColor.RED));
+            player.sendMessage(messages.getListEmpty());
             return true;
         }
 
-        player.sendMessage(Component.text("--- " + displayName + " Saved Coordinates ---")
-                .color(NamedTextColor.GOLD)
-                .decorate(TextDecoration.BOLD));
+        // Send header based on ownership
+        if (targetPlayerName == null) {
+            player.sendMessage(messages.getOwnListHeader());
+        } else {
+            player.sendMessage(messages.getOtherListHeader(targetPlayerName));
+        }
 
         for (String name : savedNames) {
             CoordinateStore.SavedLocation c = crdStore.getPoint(targetOwnerId, name);
-            String coordsText = String.format("%.1f, %.1f, %.1f", c.x(), c.y(), c.z());
 
             // Construct the goto command based on ownership
             String gotoCommand;
             if (targetOwnerId.equals(player.getUniqueId())) {
                 gotoCommand = "/goto " + name;
             } else {
-                gotoCommand = "/goto " + args[0] + ":" + name;
+                gotoCommand = "/goto " + targetPlayerName + ":" + name;
             }
 
-            Component lineComponent = Component.text("[" + name + "] ")
-                    .color(NamedTextColor.AQUA)
-                    .append(Component.text(coordsText).color(NamedTextColor.YELLOW))
+            Component lineComponent = messages.getListEntry(name, c.worldName(), c.x(), c.y(), c.z())
                     .hoverEvent(HoverEvent.showText(
                             Component.text("Click to teleport to " + name).color(NamedTextColor.GREEN)
                     ))

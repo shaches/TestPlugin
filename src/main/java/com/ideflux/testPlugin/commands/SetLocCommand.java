@@ -1,8 +1,7 @@
 package com.ideflux.testPlugin.commands;
 
 import com.ideflux.testPlugin.CoordinateStore;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import com.ideflux.testPlugin.MessageManager;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -26,26 +25,28 @@ import java.util.List;
 public class SetLocCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
+    private final MessageManager messages;
 
-    public SetLocCommand(CoordinateStore crdStore) {
+    public SetLocCommand(CoordinateStore crdStore, MessageManager messages) {
         this.crdStore = crdStore;
+        this.messages = messages;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
+            sender.sendMessage(messages.getPlayerOnly());
             return true;
         }
 
         // Require basic permission to modify locations
         if (!player.hasPermission("testplugin.basic")) {
-            player.sendMessage(Component.text("Error: You don't have permission to modify locations.")
-                    .color(NamedTextColor.RED));
+            player.sendMessage(messages.getNoBasicPermission());
             return true;
         }
 
         if (args.length != 4) {
-            player.sendMessage(Component.text("Usage: /setloc <name> <x> <y> <z>").color(NamedTextColor.RED));
+            player.sendMessage(messages.getUsageSetLoc());
             return true;
         }
 
@@ -59,21 +60,18 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
             // Enforce ownership: only allow modifying locations owned by the player
             CoordinateStore.SavedLocation existing = crdStore.getPoint(player.getUniqueId(), targetName);
             if (existing == null) {
-                player.sendMessage(Component.text("Error: Location '" + targetName + "' does not exist in your saved locations. Use /storeloc to create it.").color(NamedTextColor.RED));
+                player.sendMessage(messages.getLocationNotFound(targetName));
                 return true;
             }
 
             // Update the location (owner can only modify their own locations)
             crdStore.storePoint(player.getUniqueId(), targetName, existing.worldName(), x, y, z);
 
-            player.sendMessage(Component.text("Overwrote coordinates for '")
-                    .color(NamedTextColor.GREEN)
-                    .append(Component.text(targetName).color(NamedTextColor.WHITE))
-                    .append(Component.text("'.")));
+            player.sendMessage(messages.getLocationUpdated(targetName));
             return true;
 
         } catch (NumberFormatException e) {
-            player.sendMessage(Component.text("Error: Coordinate arguments must be numbers.").color(NamedTextColor.RED));
+            player.sendMessage(messages.getInvalidCoordinates());
             return true;
         }
     }
