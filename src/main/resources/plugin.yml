@@ -18,6 +18,9 @@ commands:
   setloc:
     description: Overwrites an existing location you own. Cannot modify other players' locations.
     usage: /setloc <name> <x> <y> <z>
+  deleteloc:
+    description: Deletes a saved location you own. Prevents file bloat from unused locations.
+    usage: /deleteloc <name>
 permissions:
   testplugin.basic:
     description: Allows saving and accessing personal locations.

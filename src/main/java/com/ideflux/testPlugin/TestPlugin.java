@@ -1,5 +1,6 @@
 package com.ideflux.testPlugin;
 
+import com.ideflux.testPlugin.commands.DeleteLocCommand;
 import com.ideflux.testPlugin.commands.GotoCommand;
 import com.ideflux.testPlugin.commands.ListLocsCommand;
 import com.ideflux.testPlugin.commands.SetLocCommand;
@@ -51,6 +52,10 @@ public class TestPlugin extends JavaPlugin {
         StoreLocCommand storeLocCmd = new StoreLocCommand(crdStore);
         Objects.requireNonNull(this.getCommand("storeloc")).setExecutor(storeLocCmd);
         Objects.requireNonNull(this.getCommand("storeloc")).setTabCompleter(storeLocCmd);
+
+        DeleteLocCommand deleteLocCmd = new DeleteLocCommand(crdStore);
+        Objects.requireNonNull(this.getCommand("deleteloc")).setExecutor(deleteLocCmd);
+        Objects.requireNonNull(this.getCommand("deleteloc")).setTabCompleter(deleteLocCmd);
 
         this.getServer().getPluginManager().registerEvents(new TabCompletionInterceptor(crdStore), this);
         this.getServer().getPluginManager().registerEvents(new CommandInterceptor(crdStore), this);

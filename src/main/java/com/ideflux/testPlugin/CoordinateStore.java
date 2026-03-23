@@ -42,8 +42,8 @@ public class CoordinateStore {
         playerPoints.computeIfAbsent(ownerId, k -> new HashMap<>())
                 .put(name.toLowerCase(), new SavedLocation(worldName, x, y, z));
 
-        // Add immediate disk persistence to prevent data loss on crash
-        saveData();
+        // Save asynchronously to prevent main thread blocking
+        saveDataAsync();
     }
 
     /**
@@ -53,6 +53,28 @@ public class CoordinateStore {
         Map<String, SavedLocation> ownerMap = playerPoints.get(ownerId);
         if (ownerMap == null) return null;
         return ownerMap.get(name.toLowerCase());
+    }
+
+    /**
+     * Deletes a saved location owned by the specified player.
+     * Returns true if the location was deleted, false if it didn't exist.
+     */
+    public boolean deletePoint(UUID ownerId, String name) {
+        Map<String, SavedLocation> ownerMap = playerPoints.get(ownerId);
+        if (ownerMap == null) return false;
+        
+        boolean removed = ownerMap.remove(name.toLowerCase()) != null;
+        
+        // Clean up empty player maps to prevent bloat
+        if (ownerMap.isEmpty()) {
+            playerPoints.remove(ownerId);
+        }
+        
+        if (removed) {
+            saveDataAsync();
+        }
+        
+        return removed;
     }
 
     /**
@@ -131,6 +153,16 @@ public class CoordinateStore {
         }
     }
 
+    /**
+     * Saves data asynchronously to prevent blocking the main thread.
+     */
+    public void saveDataAsync() {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, this::saveData);
+    }
+
+    /**
+     * Saves data synchronously. Should only be called from async context or on plugin disable.
+     */
     public void saveData() {
         FileConfiguration config = plugin.getConfig();
 

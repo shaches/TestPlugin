@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -23,11 +24,27 @@ import java.util.UUID;
  * These arguments are replaced with the X, Y, Z floating-point coordinates of the corresponding
  * saved location, if found in the CoordinateStore.
  *
+ * Only whitelisted commands are processed to prevent unintended replacements in chat or text-based commands.
+ *
  * If the command is modified, the player is notified of the substitution in the chat.
  */
 public class CommandInterceptor implements Listener {
 
     private final CoordinateStore crdStore;
+    
+    // Whitelist of commands that support coordinate substitution
+    private static final Set<String> WHITELISTED_COMMANDS = Set.of(
+            "/tp", "/teleport", "/minecraft:tp", "/minecraft:teleport",
+            "/execute", "/minecraft:execute",
+            "/setblock", "/minecraft:setblock",
+            "/fill", "/minecraft:fill",
+            "/clone", "/minecraft:clone",
+            "/particle", "/minecraft:particle",
+            "/summon", "/minecraft:summon",
+            "/spawnpoint", "/minecraft:spawnpoint",
+            "/setworldspawn", "/minecraft:setworldspawn",
+            "/goto"
+    );
 
     public CommandInterceptor(CoordinateStore crdStore) {
         this.crdStore = crdStore;
@@ -37,6 +54,14 @@ public class CommandInterceptor implements Listener {
     public void onCommandPreprocess(PlayerCommandPreprocessEvent event) {
         String message = event.getMessage(); // E.g., "/tp @p #home" or "/tp @p #player:home"
         String[] parts = message.split(" ");
+        
+        // Check if command is whitelisted
+        if (parts.length == 0) return;
+        String command = parts[0].toLowerCase();
+        if (!WHITELISTED_COMMANDS.contains(command)) {
+            return; // Skip non-whitelisted commands
+        }
+        
         boolean modified = false;
         Player player = event.getPlayer();
 
