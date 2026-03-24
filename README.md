@@ -56,3 +56,7 @@ permissions:
   * Database operations are processed asynchronously via HikariCP and `CompletableFuture`.
   * Tab completion utilizes a main-thread updated `VisibilityCache` to comply with Bukkit API thread contracts during asynchronous execution.
   * The codebase includes unit tests written with JUnit 5 and Mockito.
+
+## Future Goal: Client-Side Companion Mod
+
+As identified through AI analysis of the current server-side architecture, a planned development objective is the creation of a companion client-side mod utilizing Fabric or NeoForge. The objective of this mod is to synchronize the server's coordinate cache with the client via Plugin Messaging Channels. This synchronization will allow integration with the client's local Brigadier command parser to provide native chat UI syntax highlighting for valid `#location` variables. Additionally, it aims to replace the existing asynchronous server-side tab completion with zero-latency local auto-completion.
