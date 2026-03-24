@@ -57,6 +57,12 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
             double y = Double.parseDouble(args[2]);
             double z = Double.parseDouble(args[3]);
 
+            // Validate coordinates to prevent DoS via NaN/Infinity
+            if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) {
+                player.sendMessage(messages.getInvalidCoordinates());
+                return true;
+            }
+
             // Enforce ownership: only allow modifying locations owned by the player
             CoordinateStore.SavedLocation existing = crdStore.getPoint(player.getUniqueId(), targetName);
             if (existing == null) {

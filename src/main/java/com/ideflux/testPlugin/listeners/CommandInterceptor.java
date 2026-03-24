@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -106,7 +107,8 @@ public class CommandInterceptor implements Listener {
 
                 if (coords != null) {
                     // Replace the #name or #player:name argument with floating-point X Y Z values
-                    parts[i] = String.format("%.2f %.2f %.2f",
+                    // Use Locale.US to ensure period decimal separator regardless of system locale
+                    parts[i] = String.format(Locale.US, "%.2f %.2f %.2f",
                             coords.x(),
                             coords.y(),
                             coords.z());

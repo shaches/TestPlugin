@@ -158,7 +158,11 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
                 } else {
                     // Suggest online player names with colon suffix
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
+                        // Skip if the requesting player cannot see the online player (vanish check)
+                        if (!player.canSee(onlinePlayer) || onlinePlayer.equals(player)) {
+                            continue;
+                        }
+                        if (!crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
                             String playerPrefix = onlinePlayer.getName().toLowerCase(Locale.ROOT) + ":";
                             if (playerPrefix.startsWith(partialInput)) {
                                 completions.add(onlinePlayer.getName() + ":");

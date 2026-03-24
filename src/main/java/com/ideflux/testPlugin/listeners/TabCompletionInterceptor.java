@@ -80,7 +80,11 @@ public class TabCompletionInterceptor implements Listener {
                 // Suggest online player names with colon suffix (requires others permission)
                 if (player.hasPermission("testplugin.others")) {
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        if (!onlinePlayer.equals(player) && !crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
+                        // Skip if the requesting player cannot see the online player (vanish check)
+                        if (!player.canSee(onlinePlayer) || onlinePlayer.equals(player)) {
+                            continue;
+                        }
+                        if (!crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
                             String playerPrefix = onlinePlayer.getName().toLowerCase() + ":";
                             if (playerPrefix.startsWith(partialName)) {
                                 newCompletions.add("#" + onlinePlayer.getName() + ":");

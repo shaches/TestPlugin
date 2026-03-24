@@ -70,6 +70,12 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
             double y = Double.parseDouble(args[2]);
             double z = Double.parseDouble(args[3]);
 
+            // Validate coordinates to prevent DoS via NaN/Infinity
+            if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) {
+                player.sendMessage(messages.getInvalidCoordinates());
+                return true;
+            }
+
             // Store the location under the player's UUID (ownership enforcement)
             crdStore.storePoint(player.getUniqueId(), name, player.getWorld().getName(), x, y, z);
 
