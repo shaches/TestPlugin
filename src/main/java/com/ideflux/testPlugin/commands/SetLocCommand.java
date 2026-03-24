@@ -24,6 +24,9 @@ import java.util.List;
  */
 public class SetLocCommand implements CommandExecutor, TabCompleter {
 
+    // Maximum length for location names to prevent database bloat and chat overflow
+    private static final int MAX_NAME_LENGTH = 32;
+
     private final CoordinateStore crdStore;
     private final MessageManager messages;
 
@@ -51,6 +54,12 @@ public class SetLocCommand implements CommandExecutor, TabCompleter {
         }
 
         String targetName = args[0].toLowerCase();
+
+        // Validate location name length
+        if (targetName.length() > MAX_NAME_LENGTH) {
+            player.sendMessage(messages.getNameTooLong(MAX_NAME_LENGTH));
+            return true;
+        }
 
         try {
             double x = Double.parseDouble(args[1]);

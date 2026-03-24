@@ -32,6 +32,9 @@ import java.util.UUID;
  */
 public class GotoCommand implements CommandExecutor, TabCompleter {
 
+    // Maximum length for location names to prevent abuse
+    private static final int MAX_NAME_LENGTH = 32;
+
     private final CoordinateStore crdStore;
     private final MessageManager messages;
     private final VisibilityCache visibilityCache;
@@ -55,6 +58,13 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
         }
 
         String input = args[0];
+
+        // Validate total input length (player:name format)
+        if (input.length() > (MAX_NAME_LENGTH * 2 + 1)) { // player + ":" + name
+            player.sendMessage(messages.getNameTooLong(MAX_NAME_LENGTH));
+            return true;
+        }
+
         UUID targetOwnerId;
         String locationName;
         String ownerName = null;
@@ -77,6 +87,12 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
             locationName = parts[1];
             ownerName = targetPlayerName;
 
+            // Validate individual parts length
+            if (locationName.length() > MAX_NAME_LENGTH) {
+                player.sendMessage(messages.getNameTooLong(MAX_NAME_LENGTH));
+                return true;
+            }
+
             // Resolve the target player's UUID using safe cache lookup
             targetOwnerId = crdStore.resolvePlayerUUID(targetPlayerName);
             if (targetOwnerId == null) {
@@ -92,6 +108,12 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
 
             targetOwnerId = player.getUniqueId();
             locationName = input;
+
+            // Validate location name length
+            if (locationName.length() > MAX_NAME_LENGTH) {
+                player.sendMessage(messages.getNameTooLong(MAX_NAME_LENGTH));
+                return true;
+            }
         }
 
         // Retrieve the location (read-only access)

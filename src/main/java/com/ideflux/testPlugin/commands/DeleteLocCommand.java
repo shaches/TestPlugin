@@ -23,6 +23,9 @@ import java.util.Set;
  */
 public class DeleteLocCommand implements CommandExecutor, TabCompleter {
 
+    // Maximum length for location names to prevent abuse
+    private static final int MAX_NAME_LENGTH = 32;
+
     private final CoordinateStore crdStore;
     private final MessageManager messages;
 
@@ -50,7 +53,13 @@ public class DeleteLocCommand implements CommandExecutor, TabCompleter {
         }
 
         String name = args[0].toLowerCase();
-        
+
+        // Validate location name length
+        if (name.length() > MAX_NAME_LENGTH) {
+            player.sendMessage(messages.getNameTooLong(MAX_NAME_LENGTH));
+            return true;
+        }
+
         // Check if the location exists
         if (crdStore.getPoint(player.getUniqueId(), name) == null) {
             player.sendMessage(messages.getLocationNotFound(name));

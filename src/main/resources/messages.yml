@@ -29,6 +29,7 @@ storage:
   not-found: "<red>Error: Location '<white>{name}</white>' not found.</red>"
   player-not-found: "<red>Error: Player '<white>{player}</white>' not found or has no saved locations.</red>"
   invalid-name: "<red>Error: Location name must only contain letters, numbers, underscores, and hyphens.</red>"
+  name-too-long: "<red>Error: Location name is too long. Maximum length is <yellow>{max}</yellow> characters.</red>"
   quota-exceeded: "<red>Error: You have reached the maximum limit of <yellow>{max}</yellow> saved locations (<yellow>{current}</yellow>/<yellow>{max}</yellow>). Delete an existing location before saving a new one.</red>"
   
 # Teleport messages

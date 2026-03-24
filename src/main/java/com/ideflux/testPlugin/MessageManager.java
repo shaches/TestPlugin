@@ -205,6 +205,10 @@ public class MessageManager {
         return getMessage("storage.invalid-name");
     }
 
+    public Component getNameTooLong(int maxLength) {
+        return getMessage("storage.name-too-long", "max", String.valueOf(maxLength));
+    }
+
     public Component getQuotaExceeded(int current, int max) {
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("current", String.valueOf(current));

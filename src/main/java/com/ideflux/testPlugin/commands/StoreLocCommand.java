@@ -30,6 +30,9 @@ import java.util.List;
  */
 public class StoreLocCommand implements CommandExecutor, TabCompleter {
 
+    // Maximum length for location names to prevent database bloat and chat overflow
+    private static final int MAX_NAME_LENGTH = 32;
+
     private final CoordinateStore crdStore;
     private final MessageManager messages;
 
@@ -59,6 +62,12 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
 
         try {
             String name = args[0];
+
+            // Validate location name length to prevent database bloat and chat overflow
+            if (name.length() > MAX_NAME_LENGTH) {
+                player.sendMessage(messages.getNameTooLong(MAX_NAME_LENGTH));
+                return true;
+            }
 
             // Validate location name to prevent database issues
             if (!name.matches("^[a-zA-Z0-9_-]+$")) {
