@@ -56,7 +56,7 @@ class VisibilityCacheTest {
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
-        
+
         when(mockPlugin.getLogger()).thenReturn(mockLogger);
 
         // Setup UUIDs
@@ -71,13 +71,14 @@ class VisibilityCacheTest {
         when(player3.getUniqueId()).thenReturn(uuid3);
         when(player3.getName()).thenReturn("Player3");
 
-        // Mock Bukkit static methods
+        // Mock Bukkit static methods BEFORE creating VisibilityCache
         bukkit = mockStatic(Bukkit.class);
-        bukkit.when(Bukkit::getServer).thenReturn(mockServer);
-        when(mockServer.getScheduler()).thenReturn(mockScheduler);
-        
+
         // Mock isPrimaryThread to return true for tests
         bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+
+        // Mock getScheduler to return mockScheduler
+        bukkit.when(Bukkit::getScheduler).thenReturn(mockScheduler);
 
         // Mock scheduler to run tasks immediately for testing
         when(mockScheduler.runTaskTimer(any(JavaPlugin.class), any(Runnable.class), anyLong(), anyLong()))

@@ -12,6 +12,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.*;
  * Unit tests for CoordinateStore to validate thread-safe ConcurrentHashMap caching,
  * player location quota enforcement, and username-to-UUID caching logic.
  */
+@Execution(ExecutionMode.SAME_THREAD)
 class CoordinateStoreTest {
 
     @TempDir
@@ -82,13 +85,22 @@ class CoordinateStoreTest {
 
     @AfterEach
     void tearDown() throws Exception {
+        coordinateStore = null;
+
+        // Wait for all async database operations to finish before closing the database
+        java.util.concurrent.ForkJoinPool.commonPool().awaitQuiescence(5, java.util.concurrent.TimeUnit.SECONDS);
+
         if (databaseManager != null) {
             databaseManager.close();
+            databaseManager = null;
         }
         if (bukkit != null) {
             bukkit.close();
         }
         mocks.close();
+
+        // Brief pause to allow the OS to complete file handle release
+        Thread.sleep(250);
     }
 
     @Test

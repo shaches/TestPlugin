@@ -112,19 +112,22 @@ public class MessageManager {
     
     /**
      * Deserializes a string into a Component.
-     * Attempts MiniMessage first, falls back to legacy ampersand codes if parsing fails.
+     * Detects format and uses appropriate deserializer:
+     * - Legacy ampersand codes (&a, &c, etc.) if text contains '&' followed by color code
+     * - MiniMessage format (supports <red>, <#FF5555>, <gradient>, etc.) otherwise
      * This provides backward compatibility while encouraging modern format usage.
      *
      * @param text The text to deserialize
      * @return The deserialized Component
      */
     private Component deserialize(String text) {
-        try {
-            // Try MiniMessage first (supports <red>, <#FF5555>, <gradient>, etc.)
-            return miniMessage.deserialize(text);
-        } catch (Exception e) {
-            // Fallback to legacy ampersand codes (&a, &c, etc.)
+        // Check if text contains legacy ampersand color codes
+        if (text.contains("&") && text.matches(".*&[0-9a-fk-or].*")) {
+            // Use legacy deserializer for ampersand codes
             return legacySerializer.deserialize(text);
+        } else {
+            // Use MiniMessage for modern format (or plain text)
+            return miniMessage.deserialize(text);
         }
     }
     

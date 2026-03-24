@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 group = 'com.ideflux'
@@ -33,13 +34,13 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    // Disable parallel execution to prevent Windows file locking issues
+    maxParallelForks = 1
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
 }
 
 tasks {
     runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
         minecraftVersion("1.21")
     }
 }
@@ -71,8 +72,21 @@ processResources {
     }
 }
 
+tasks.named('shadowJar') {
+    relocate 'com.zaxxer.hikari', 'com.ideflux.testPlugin.libs.hikari'
+    // The org.sqlite relocation has been removed
+
+    // Removes the '-all' suffix so the shadowed jar overwrites the default jar
+    archiveClassifier.set('')
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}
+
 tasks.register('deploy') {
-    dependsOn build
+    // Ensure the deploy task relies on the shadowed jar being built
+    dependsOn tasks.named('shadowJar')
     doLast {
         def containerName = "paper-mc"
         def pluginName = project.name
