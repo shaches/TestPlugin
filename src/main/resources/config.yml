@@ -1,0 +1,39 @@
+# TestPlugin Configuration
+# Main configuration file for location storage and plugin settings
+
+# Storage Settings
+storage:
+  # Maximum number of locations a player can save
+  # Set to -1 for unlimited locations
+  # Set to 0 to disable location saving entirely
+  # Default: 50 locations per player
+  max-locations-per-player: 50
+
+  # Migration flag (automatically set by the plugin)
+  # DO NOT modify this manually
+  migrated_to_sqlite: false
+
+# Database Settings
+database:
+  # SQLite connection pool settings
+  # Only modify these if you experience performance issues
+
+  # Maximum number of concurrent database connections
+  max-pool-size: 10
+
+  # Minimum number of idle connections to keep in the pool
+  min-idle: 2
+
+  # Connection timeout in milliseconds
+  connection-timeout: 10000
+
+  # Maximum idle time for connections in milliseconds (10 minutes)
+  idle-timeout: 600000
+
+  # Maximum lifetime for connections in milliseconds (30 minutes)
+  max-lifetime: 1800000
+
+# Permission Settings
+permissions:
+  # If true, players with testplugin.admin can bypass the location quota
+  admin-bypass-quota: true

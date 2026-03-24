@@ -204,7 +204,14 @@ public class MessageManager {
     public Component getInvalidName() {
         return getMessage("storage.invalid-name");
     }
-    
+
+    public Component getQuotaExceeded(int current, int max) {
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("current", String.valueOf(current));
+        placeholders.put("max", String.valueOf(max));
+        return getMessage("storage.quota-exceeded", placeholders);
+    }
+
     public Component getTeleportSuccess(String name) {
         return getMessage("teleport.success", "name", name);
     }

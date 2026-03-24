@@ -160,6 +160,63 @@ public class CoordinateStore {
     }
 
     /**
+     * Gets the number of saved locations for a specific player.
+     * Thread-safe: Reads from in-memory cache.
+     *
+     * @param ownerId The UUID of the player
+     * @return The number of saved locations, or 0 if player has none
+     */
+    public int getLocationCount(UUID ownerId) {
+        if (ownerId == null) {
+            return 0;
+        }
+        Map<String, SavedLocation> ownerMap = locationCache.get(ownerId);
+        return ownerMap != null ? ownerMap.size() : 0;
+    }
+
+    /**
+     * Checks if a player can save a new location based on quota limits.
+     * Checks both the configured quota and whether the location already exists.
+     * Thread-safe: Reads from config and in-memory cache.
+     *
+     * @param ownerId The UUID of the player
+     * @param locationName The name of the location (for checking if it's an update)
+     * @param bypassQuota Whether to bypass quota (e.g., admin permission)
+     * @return true if the player can save the location, false if quota exceeded
+     */
+    public boolean canSaveLocation(UUID ownerId, String locationName, boolean bypassQuota) {
+        if (bypassQuota) {
+            return true;
+        }
+
+        int maxLocations = plugin.getConfig().getInt("storage.max-locations-per-player", 50);
+
+        // -1 means unlimited
+        if (maxLocations < 0) {
+            return true;
+        }
+
+        // Check if this is an update to an existing location
+        if (getPoint(ownerId, locationName) != null) {
+            return true; // Updates don't count against quota
+        }
+
+        // Check if player has reached quota
+        int currentCount = getLocationCount(ownerId);
+        return currentCount < maxLocations;
+    }
+
+    /**
+     * Gets the maximum number of locations allowed per player from config.
+     * Thread-safe: Reads from config.
+     *
+     * @return Max locations per player, or -1 for unlimited
+     */
+    public int getMaxLocationsPerPlayer() {
+        return plugin.getConfig().getInt("storage.max-locations-per-player", 50);
+    }
+
+    /**
      * Returns all player UUIDs that have saved locations.
      * Thread-safe: Reads from in-memory cache.
      */
