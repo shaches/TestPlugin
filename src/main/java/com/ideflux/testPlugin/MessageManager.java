@@ -274,7 +274,15 @@ public class MessageManager {
     public Component getInvalidCoordinates() {
         return getMessage("errors.invalid-coordinates");
     }
-    
+
+    public Component getLocationInDifferentWorld(String locationName, String savedWorld, String currentWorld) {
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("name", locationName);
+        placeholders.put("saved_world", savedWorld);
+        placeholders.put("current_world", currentWorld);
+        return getMessage("errors.location-different-world", placeholders);
+    }
+
     @SuppressWarnings("unused")
     public Component getDatabaseError() {
         return getMessage("errors.database-error");

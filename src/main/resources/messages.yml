@@ -59,6 +59,7 @@ interceptor:
 # Error messages
 errors:
   invalid-coordinates: "<red>Error: Coordinates must be numeric values.</red>"
+  location-different-world: "<red>Error: Location '<white>{name}</white>' is in world '<yellow>{saved_world}</yellow>', but you are in '<yellow>{current_world}</yellow>'. Cannot use cross-world coordinates.</red>"
   database-error: "<red>Error: Failed to save location. Please contact an administrator.</red>"
   
 # Database messages (console only, not user-facing)

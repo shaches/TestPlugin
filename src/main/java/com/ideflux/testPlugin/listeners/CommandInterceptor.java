@@ -106,6 +106,13 @@ public class CommandInterceptor implements Listener {
                 CoordinateStore.SavedLocation coords = crdStore.getPoint(targetOwnerId, locationName);
 
                 if (coords != null) {
+                    // Validate world matches to prevent cross-dimensional coordinate injection
+                    String playerWorld = player.getWorld().getName();
+                    if (!coords.worldName().equals(playerWorld)) {
+                        player.sendMessage(messages.getLocationInDifferentWorld(locationName, coords.worldName(), playerWorld));
+                        continue; // Skip this substitution
+                    }
+
                     // Replace the #name or #player:name argument with floating-point X Y Z values
                     // Use Locale.US to ensure period decimal separator regardless of system locale
                     parts[i] = String.format(Locale.US, "%.2f %.2f %.2f",

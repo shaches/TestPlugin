@@ -1,25 +1,26 @@
 package com.ideflux.testPlugin.storage;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
- * Manages SQLite database connection and initialization.
- * Provides connection pooling and proper resource management.
- * Thread-safe and designed for async database operations.
+ * Manages SQLite database connection pool using HikariCP.
+ * Provides thread-safe connection pooling and proper resource management.
+ * Each async operation gets its own connection from the pool, preventing transaction bleeding.
  */
 public class DatabaseManager {
-    
+
     private final JavaPlugin plugin;
     private final String databasePath;
-    private Connection connection;
+    private HikariDataSource dataSource;
     
     public DatabaseManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -27,7 +28,7 @@ public class DatabaseManager {
     }
     
     /**
-     * Initializes the database connection and creates tables if needed.
+     * Initializes the database connection pool and creates tables if needed.
      * Runs asynchronously to prevent blocking the main thread during plugin startup.
      *
      * @return CompletableFuture that completes when initialization is done
@@ -41,30 +42,42 @@ public class DatabaseManager {
                         plugin.getLogger().warning("Failed to create plugin data folder");
                     }
                 }
-                
-                // Load SQLite JDBC driver
-                Class.forName("org.sqlite.JDBC");
-                
-                // Establish connection
-                connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
-                
-                // Enable foreign keys and WAL mode for better performance
-                try (Statement stmt = connection.createStatement()) {
+
+                // Configure HikariCP connection pool
+                HikariConfig config = new HikariConfig();
+                config.setJdbcUrl("jdbc:sqlite:" + databasePath);
+                config.setDriverClassName("org.sqlite.JDBC");
+
+                // Connection pool settings
+                config.setMaximumPoolSize(10); // Max 10 concurrent connections
+                config.setMinimumIdle(2); // Keep at least 2 idle connections
+                config.setConnectionTimeout(10000); // 10 second timeout
+                config.setIdleTimeout(600000); // 10 minute idle timeout
+                config.setMaxLifetime(1800000); // 30 minute max lifetime
+
+                // SQLite-specific optimizations
+                config.addDataSourceProperty("cachePrepStmts", "true");
+                config.addDataSourceProperty("prepStmtCacheSize", "250");
+                config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+
+                // Initialize connection pool
+                dataSource = new HikariDataSource(config);
+
+                // Configure SQLite pragmas using a connection from the pool
+                try (Connection conn = dataSource.getConnection();
+                     Statement stmt = conn.createStatement()) {
                     stmt.execute("PRAGMA foreign_keys = ON");
                     stmt.execute("PRAGMA journal_mode = WAL"); // Write-Ahead Logging for better concurrency
                     stmt.execute("PRAGMA synchronous = NORMAL"); // Balance between safety and performance
                 }
-                
+
                 // Create tables
                 createTables();
-                
-                plugin.getLogger().info("SQLite database initialized successfully at: " + databasePath);
-                
-            } catch (ClassNotFoundException e) {
-                plugin.getLogger().log(Level.SEVERE, "SQLite JDBC driver not found!", e);
-                throw new RuntimeException("Database initialization failed", e);
+
+                plugin.getLogger().info("SQLite database pool initialized successfully at: " + databasePath);
+
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, "Failed to initialize database!", e);
+                plugin.getLogger().log(Level.SEVERE, "Failed to initialize database pool!", e);
                 throw new RuntimeException("Database initialization failed", e);
             }
         });
@@ -88,17 +101,17 @@ public class DatabaseManager {
                 UNIQUE(owner_uuid, location_name)
             )
             """;
-        
+
         String createIndexOwner = """
             CREATE INDEX IF NOT EXISTS idx_owner_uuid
             ON player_locations(owner_uuid)
             """;
-        
+
         String createIndexName = """
             CREATE INDEX IF NOT EXISTS idx_location_name
             ON player_locations(owner_uuid, location_name)
             """;
-        
+
         String createUsernameCacheTable = """
             CREATE TABLE IF NOT EXISTS username_cache (
                 username TEXT PRIMARY KEY,
@@ -106,8 +119,9 @@ public class DatabaseManager {
                 last_seen INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
             )
             """;
-        
-        try (Statement stmt = connection.createStatement()) {
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
             stmt.execute(createLocationsTable);
             stmt.execute(createIndexOwner);
             stmt.execute(createIndexName);
@@ -116,34 +130,32 @@ public class DatabaseManager {
     }
     
     /**
-     * Gets a connection to the database.
-     * Callers are responsible for proper resource management.
+     * Gets a connection from the pool.
+     * Each caller gets their own connection, ensuring thread safety and transaction isolation.
+     * Callers MUST close the connection when done (use try-with-resources).
      */
     public Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+        if (dataSource == null || dataSource.isClosed()) {
+            throw new SQLException("Database connection pool is not initialized or has been closed");
         }
-        return connection;
+        return dataSource.getConnection();
     }
-    
+
     /**
-     * Closes the database connection.
+     * Closes the database connection pool.
      * Should be called during plugin disable.
      */
     public void close() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-                plugin.getLogger().info("Database connection closed successfully.");
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Error closing database connection!", e);
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+            plugin.getLogger().info("Database connection pool closed successfully.");
         }
     }
     
     /**
      * Executes a database operation asynchronously and returns a CompletableFuture.
      * Ensures database operations don't block the main server thread.
+     * Each operation gets its own connection from the pool, ensuring thread safety.
      *
      * @param operation The database operation to execute
      * @param <T> The return type of the operation
@@ -151,8 +163,9 @@ public class DatabaseManager {
      */
     public <T> CompletableFuture<T> executeAsync(DatabaseOperation<T> operation) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                return operation.execute(getConnection());
+            // Each async operation gets its own connection from the pool
+            try (Connection conn = getConnection()) {
+                return operation.execute(conn);
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.SEVERE, "Database operation failed: " + e.getMessage(), e);
                 throw new RuntimeException("Database operation failed", e);

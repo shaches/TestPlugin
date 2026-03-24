@@ -2,6 +2,7 @@ package com.ideflux.testPlugin.commands;
 
 import com.ideflux.testPlugin.CoordinateStore;
 import com.ideflux.testPlugin.MessageManager;
+import com.ideflux.testPlugin.VisibilityCache;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -33,10 +34,12 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
 
     private final CoordinateStore crdStore;
     private final MessageManager messages;
+    private final VisibilityCache visibilityCache;
 
-    public GotoCommand(CoordinateStore crdStore, MessageManager messages) {
+    public GotoCommand(CoordinateStore crdStore, MessageManager messages, VisibilityCache visibilityCache) {
         this.crdStore = crdStore;
         this.messages = messages;
+        this.visibilityCache = visibilityCache;
     }
 
     @Override
@@ -157,6 +160,7 @@ public class GotoCommand implements CommandExecutor, TabCompleter {
                     }
                 } else {
                     // Suggest online player names with colon suffix
+                    // Tab completion is synchronous, so we can safely use player.canSee()
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                         // Skip if the requesting player cannot see the online player (vanish check)
                         if (!player.canSee(onlinePlayer) || onlinePlayer.equals(player)) {

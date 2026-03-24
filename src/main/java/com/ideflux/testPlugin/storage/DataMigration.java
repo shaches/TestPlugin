@@ -2,6 +2,7 @@ package com.ideflux.testPlugin.storage;
 
 import com.ideflux.testPlugin.CoordinateStore;
 import com.ideflux.testPlugin.CoordinateStore.SavedLocation;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -70,13 +71,16 @@ public class DataMigration {
             // Import to database
             repository.batchImportLocations(yamlData).thenRun(() -> {
                 plugin.getLogger().info("Successfully migrated " + totalLocations + " locations to SQLite!");
-                
-                // Mark migration as complete
-                markMigrationComplete();
-                
-                // Create backup of old YAML data
-                createYamlBackup();
-                
+
+                // Must return to main thread for config operations
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    // Mark migration as complete
+                    markMigrationComplete();
+
+                    // Create backup of old YAML data
+                    createYamlBackup();
+                });
+
             }).exceptionally(ex -> {
                 plugin.getLogger().severe("Migration failed after processing YAML data: " + ex.getMessage());
                 plugin.getLogger().severe("Your YAML data is still intact. Please report this error.");
@@ -93,8 +97,12 @@ public class DataMigration {
     
     /**
      * Marks migration as complete in the config.
+     * MUST be called on main thread due to FileConfiguration thread-safety requirements.
      */
     private void markMigrationComplete() {
+        if (!Bukkit.isPrimaryThread()) {
+            plugin.getLogger().warning("markMigrationComplete() called from non-main thread!");
+        }
         FileConfiguration config = plugin.getConfig();
         config.set("storage.migrated_to_sqlite", true);
         plugin.saveConfig();
@@ -103,20 +111,24 @@ public class DataMigration {
     
     /**
      * Creates a backup of the YAML data before clearing it.
+     * MUST be called on main thread due to FileConfiguration thread-safety requirements.
      */
     private void createYamlBackup() {
+        if (!Bukkit.isPrimaryThread()) {
+            plugin.getLogger().warning("createYamlBackup() called from non-main thread!");
+        }
         try {
             File configFile = new File(plugin.getDataFolder(), "config.yml");
             File backupFile = new File(plugin.getDataFolder(), "config.yml.backup");
-            
+
             if (configFile.exists()) {
                 java.nio.file.Files.copy(
-                    configFile.toPath(), 
+                    configFile.toPath(),
                     backupFile.toPath(),
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING
                 );
                 plugin.getLogger().info("Created backup at: config.yml.backup");
-                
+
                 // Clear the YAML data from active config
                 FileConfiguration config = plugin.getConfig();
                 config.set("storage.points", null);

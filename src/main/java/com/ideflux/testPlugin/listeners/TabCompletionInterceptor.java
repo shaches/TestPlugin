@@ -1,8 +1,8 @@
 package com.ideflux.testPlugin.listeners;
 
 import com.ideflux.testPlugin.CoordinateStore;
+import com.ideflux.testPlugin.VisibilityCache;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,13 +23,17 @@ import java.util.UUID;
  *
  * If the user provides a partial input that begins with "#", the class dynamically suggests
  * matching completions from both the player's own locations and other players' locations.
+ *
+ * Thread-safety: Uses VisibilityCache to avoid calling synchronous Bukkit API from async context.
  */
 public class TabCompletionInterceptor implements Listener {
 
     private final CoordinateStore crdStore;
+    private final VisibilityCache visibilityCache;
 
-    public TabCompletionInterceptor(CoordinateStore crdStore) {
+    public TabCompletionInterceptor(CoordinateStore crdStore, VisibilityCache visibilityCache) {
         this.crdStore = crdStore;
+        this.visibilityCache = visibilityCache;
     }
 
     @EventHandler
@@ -79,15 +83,16 @@ public class TabCompletionInterceptor implements Listener {
 
                 // Suggest online player names with colon suffix (requires others permission)
                 if (player.hasPermission("testplugin.others")) {
-                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        // Skip if the requesting player cannot see the online player (vanish check)
-                        if (!player.canSee(onlinePlayer) || onlinePlayer.equals(player)) {
-                            continue;
-                        }
-                        if (!crdStore.getSavedNames(onlinePlayer.getUniqueId()).isEmpty()) {
-                            String playerPrefix = onlinePlayer.getName().toLowerCase() + ":";
-                            if (playerPrefix.startsWith(partialName)) {
-                                newCompletions.add("#" + onlinePlayer.getName() + ":");
+                    // Use visibility cache to avoid async API violations
+                    for (UUID visibleUuid : visibilityCache.getVisiblePlayers(player.getUniqueId())) {
+                        if (!crdStore.getSavedNames(visibleUuid).isEmpty()) {
+                            // Get player name safely from online players
+                            Player onlinePlayer = Bukkit.getPlayer(visibleUuid);
+                            if (onlinePlayer != null) {
+                                String playerPrefix = onlinePlayer.getName().toLowerCase() + ":";
+                                if (playerPrefix.startsWith(partialName)) {
+                                    newCompletions.add("#" + onlinePlayer.getName() + ":");
+                                }
                             }
                         }
                     }
