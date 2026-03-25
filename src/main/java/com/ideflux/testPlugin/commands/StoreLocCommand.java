@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Command implementation providing functionality to store player locations
@@ -87,7 +88,7 @@ public class StoreLocCommand implements CommandExecutor, TabCompleter {
 
             // Check quota limits (admins can bypass)
             boolean canBypass = player.hasPermission("testplugin.admin") &&
-                               player.getServer().getPluginManager().getPlugin("TestPlugin").getConfig().getBoolean("permissions.admin-bypass-quota", true);
+                               Objects.requireNonNull(player.getServer().getPluginManager().getPlugin("TestPlugin")).getConfig().getBoolean("permissions.admin-bypass-quota", true);
 
             if (!crdStore.canSaveLocation(player.getUniqueId(), name, canBypass)) {
                 int current = crdStore.getLocationCount(player.getUniqueId());

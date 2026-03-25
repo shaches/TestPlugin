@@ -198,7 +198,7 @@ class DatabaseManagerTest {
 
         // Then
         ExecutionException exception = assertThrows(ExecutionException.class, future::get);
-        assertTrue(exception.getCause() instanceof RuntimeException);
+        assertInstanceOf(RuntimeException.class, exception.getCause());
         assertTrue(exception.getCause().getMessage().contains("Database operation failed"));
     }
 
@@ -207,7 +207,7 @@ class DatabaseManagerTest {
         // Given
         databaseManager.initializeAsync().get();
 
-        // Use reflection to access private dataSource field
+        // Use reflection to access the private dataSource field
         Field dataSourceField = DatabaseManager.class.getDeclaredField("dataSource");
         dataSourceField.setAccessible(true);
         HikariDataSource dataSource = (HikariDataSource) dataSourceField.get(databaseManager);

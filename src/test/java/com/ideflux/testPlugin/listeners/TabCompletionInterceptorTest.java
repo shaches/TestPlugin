@@ -324,7 +324,7 @@ class TabCompletionInterceptorTest {
 
         // Then - should use VisibilityCache, not Bukkit.getOnlinePlayers()
         verify(mockVisibilityCache).getVisiblePlayers(playerUuid);
-        bukkit.verify(() -> Bukkit.getOnlinePlayers(), never());
+        bukkit.verify(Bukkit::getOnlinePlayers, never());
     }
 
     @Test

@@ -50,11 +50,11 @@ class MessageManagerTest {
         when(mockPlugin.getDataFolder()).thenReturn(dataFolder);
         when(mockPlugin.getLogger()).thenReturn(mockLogger);
 
-        // Create messages.yml file
+        // Create the messages.yml file
         messagesFile = new File(dataFolder, "messages.yml");
         dataFolder.mkdirs();
 
-        // Mock getResource to return null (file will be created by tests)
+        // Mock getResource to return null (tests will create the file)
         when(mockPlugin.getResource("messages.yml")).thenReturn(null);
 
         plainSerializer = PlainTextComponentSerializer.plainText();

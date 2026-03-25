@@ -52,7 +52,6 @@ class DataMigrationTest {
 
     private DatabaseManager databaseManager;
     private LocationRepository repository;
-    private CoordinateStore coordinateStore;
     private DataMigration dataMigration;
     private FileConfiguration config;
     private File configFile;
@@ -100,7 +99,7 @@ class DataMigrationTest {
 
         // Initialize repository and coordinate store
         repository = new LocationRepository(databaseManager);
-        coordinateStore = new CoordinateStore(mockPlugin, databaseManager);
+        CoordinateStore coordinateStore = new CoordinateStore(mockPlugin, databaseManager);
 
         dataMigration = new DataMigration(mockPlugin, coordinateStore, repository);
     }

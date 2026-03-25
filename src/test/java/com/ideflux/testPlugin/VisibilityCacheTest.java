@@ -104,7 +104,7 @@ class VisibilityCacheTest {
     void testCanSee_ReturnsTrueWhenVisible() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(true);
         
         // Trigger cache update
@@ -121,7 +121,7 @@ class VisibilityCacheTest {
     void testCanSee_ReturnsFalseWhenNotVisible() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(false);
         
         // Trigger cache update
@@ -138,7 +138,7 @@ class VisibilityCacheTest {
     void testCanSee_ReturnsFalseForSelf() {
         // Given
         Collection<Player> players = Collections.singletonList(player1);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player1);
@@ -154,7 +154,7 @@ class VisibilityCacheTest {
     void testCanSee_ReturnsFalseWhenObserverNotOnline() {
         // Given
         Collection<Player> players = Collections.singletonList(player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player2);
@@ -170,7 +170,7 @@ class VisibilityCacheTest {
     void testGetVisiblePlayers_ReturnsAllVisiblePlayers() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2, player3);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(true);
         when(player1.canSee(player3)).thenReturn(true);
         
@@ -191,7 +191,7 @@ class VisibilityCacheTest {
     void testGetVisiblePlayers_ExcludesVanishedPlayers() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2, player3);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(true);
         when(player1.canSee(player3)).thenReturn(false); // player3 is vanished
         
@@ -211,7 +211,7 @@ class VisibilityCacheTest {
     void testGetVisiblePlayers_ReturnsEmptyForOfflinePlayer() {
         // Given
         Collection<Player> players = Collections.singletonList(player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player2);
@@ -227,7 +227,7 @@ class VisibilityCacheTest {
     void testGetVisiblePlayers_ReturnsImmutableSet() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(true);
         
         // Trigger cache update
@@ -246,7 +246,7 @@ class VisibilityCacheTest {
     void testIsOnline_ReturnsTrueForOnlinePlayer() {
         // Given
         Collection<Player> players = Collections.singletonList(player1);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player1);
@@ -262,7 +262,7 @@ class VisibilityCacheTest {
     void testIsOnline_ReturnsFalseForOfflinePlayer() {
         // Given
         Collection<Player> players = Collections.singletonList(player1);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player1);
@@ -278,7 +278,7 @@ class VisibilityCacheTest {
     void testGetOnlinePlayers_ReturnsAllOnlinePlayers() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2, player3);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player1);
@@ -297,7 +297,7 @@ class VisibilityCacheTest {
     void testGetOnlinePlayers_ReturnsImmutableSet() {
         // Given
         Collection<Player> players = Collections.singletonList(player1);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         
         // Trigger cache update
         visibilityCache.onPlayerJoin(player1);
@@ -315,7 +315,7 @@ class VisibilityCacheTest {
     void testOnPlayerJoin_UpdatesCache() {
         // Given
         Collection<Player> players = Collections.singletonList(player1);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
 
         // When
         visibilityCache.onPlayerJoin(player1);
@@ -328,7 +328,7 @@ class VisibilityCacheTest {
     void testOnPlayerQuit_RemovesPlayerFromCache() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         visibilityCache.onPlayerJoin(player1);
         
         // Verify player1 is online
@@ -345,7 +345,7 @@ class VisibilityCacheTest {
     void testOnPlayerQuit_RemovesFromOtherPlayersVisibility() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player2.canSee(player1)).thenReturn(true);
         
         visibilityCache.onPlayerJoin(player1);
@@ -364,7 +364,7 @@ class VisibilityCacheTest {
     void testThreadSafety_ConcurrentReads() throws InterruptedException {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(true);
         visibilityCache.onPlayerJoin(player1);
 
@@ -397,7 +397,7 @@ class VisibilityCacheTest {
     void testAsyncSafety_CanBeCalledFromNonMainThread() {
         // Given
         Collection<Player> players = Arrays.asList(player1, player2);
-        bukkit.when(Bukkit::getOnlinePlayers).thenReturn((Collection) players);
+        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(players);
         when(player1.canSee(player2)).thenReturn(true);
         visibilityCache.onPlayerJoin(player1);
 

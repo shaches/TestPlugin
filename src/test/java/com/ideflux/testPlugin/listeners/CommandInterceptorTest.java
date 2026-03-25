@@ -12,7 +12,6 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -22,20 +21,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.mockito.MockedStatic;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.UUID;
-import java.util.logging.Logger;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import com.ideflux.testPlugin.storage.DatabaseManager;
-import com.ideflux.testPlugin.storage.LocationRepository;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class CommandInterceptorTest {
@@ -85,8 +71,7 @@ class CommandInterceptorTest {
     }
 
     private PlayerCommandPreprocessEvent createEvent(String command) {
-        PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(mockPlayer, command);
-        return event;
+        return new PlayerCommandPreprocessEvent(mockPlayer, command);
     }
 
     // ==================== Whitelisted Commands Tests ====================
